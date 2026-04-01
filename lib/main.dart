@@ -1,3 +1,4 @@
+import 'package:device_preview/device_preview.dart';
 import 'package:flutter/material.dart';
 import 'screens/login.dart';
 
@@ -20,7 +21,6 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       locale: DevicePreview.locale(context),
       builder: DevicePreview.appBuilder,
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
       title: 'Flutter Demo',
       theme: ThemeData(
         // This is the theme of your application.
