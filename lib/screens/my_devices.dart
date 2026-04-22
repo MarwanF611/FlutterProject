@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../constants/app_constants.dart';
 import '../models/device.dart';
 import '../providers/auth_provider.dart';
 import '../providers/device_provider.dart';
@@ -21,12 +22,13 @@ class MyDevicesScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mijn toestellen'),
-        backgroundColor: const Color(0xFF1976D2),
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
+        elevation: 0,
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.pushNamed(context, '/add-device'),
-        backgroundColor: const Color(0xFF1976D2),
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
         label: const Text('Toestel toevoegen'),
@@ -45,7 +47,7 @@ class MyDevicesScreen extends StatelessWidget {
                 children: [
                   Icon(Icons.add_box_outlined,
                       size: 64, color: Colors.grey[400]),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   Text(
                     'Je hebt nog geen toestellen toegevoegd.',
                     style: TextStyle(color: Colors.grey[600]),
@@ -55,7 +57,7 @@ class MyDevicesScreen extends StatelessWidget {
             );
           }
           return ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
             itemCount: devices.length,
             itemBuilder: (context, index) {
               final device = devices[index];
@@ -76,21 +78,25 @@ class _DeviceOwnerTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = context.read<DeviceProvider>();
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+      elevation: 1,
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: const Color(0xFFE3F2FD),
-          child: Icon(
+          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+          child: const Icon(
             Icons.devices,
-            color: const Color(0xFF1976D2),
+            color: AppColors.primary,
           ),
         ),
         title: Text(
           device.title,
-          style: const TextStyle(fontWeight: FontWeight.w600),
+          style: AppTypography.title3,
         ),
-        subtitle: Text('€${device.pricePerDay.toStringAsFixed(2)} / dag'),
+        subtitle: Text(
+          '€${device.pricePerDay.toStringAsFixed(2)} / dag',
+          style: AppTypography.body3,
+        ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -98,10 +104,10 @@ class _DeviceOwnerTile extends StatelessWidget {
               value: device.isAvailable,
               onChanged: (v) =>
                   provider.toggleAvailability(device.id, device.isAvailable),
-              activeThumbColor: Colors.green,
+              activeThumbColor: AppColors.success,
             ),
             IconButton(
-              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              icon: const Icon(Icons.delete_outline, color: AppColors.error),
               onPressed: () => _confirmDelete(context, provider),
             ),
           ],
@@ -126,7 +132,7 @@ class _DeviceOwnerTile extends StatelessWidget {
               Navigator.pop(context);
               provider.removeDevice(device.id, device.imageUrl);
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: const Text('Verwijderen'),
           ),
         ],

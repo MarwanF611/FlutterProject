@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../constants/app_constants.dart';
 import '../models/device.dart';
 
 class CategoryChipRow extends StatelessWidget {
@@ -17,7 +18,7 @@ class CategoryChipRow extends StatelessWidget {
       height: 48,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         children: [
           _chip(context, null, 'Alle', Icons.apps),
           ...kCategories.map((cat) => _chip(
@@ -35,20 +36,29 @@ class CategoryChipRow extends StatelessWidget {
       BuildContext context, String? value, String label, IconData icon) {
     final selected = selectedCategory == value;
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.only(right: AppSpacing.sm),
       child: ChoiceChip(
         avatar: Icon(icon, size: 16),
         label: Text(label),
         selected: selected,
         onSelected: (_) => onSelected(value),
-        selectedColor: Theme.of(context).colorScheme.primary,
+        selectedColor: AppColors.primary,
+        backgroundColor: AppColors.bgGrey,
         labelStyle: TextStyle(
-          color: selected ? Colors.white : Colors.black87,
+          color: selected ? Colors.white : AppColors.textDark,
           fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+          fontSize: 13,
         ),
         avatarBorder: const CircleBorder(),
         iconTheme: IconThemeData(
-          color: selected ? Colors.white : Colors.black54,
+          color: selected ? Colors.white : AppColors.textMedium,
+          size: 16,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.circle),
+          side: BorderSide(
+            color: selected ? AppColors.primary : Colors.transparent,
+          ),
         ),
       ),
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../constants/app_constants.dart';
 import 'homepage.dart';
 import 'my_devices.dart';
 import 'my_reservations.dart';
@@ -30,8 +31,10 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
         currentIndex: _currentIndex,
         onTap: (i) => setState(() => _currentIndex = i),
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF1976D2),
-        unselectedItemColor: const Color(0xFFB6B6B6),
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: AppColors.textLight,
+        backgroundColor: AppColors.bgLight,
+        elevation: 8,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
@@ -69,6 +72,8 @@ class ReservationsTabScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Reservaties'),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Mijn aanvragen'),
