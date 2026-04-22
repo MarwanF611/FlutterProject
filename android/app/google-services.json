@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "865885001584",
+    "project_id": "toestelldelen",
+    "storage_bucket": "toestelldelen.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:865885001584:android:956d142801a68c37e961b5",
+        "android_client_info": {
+          "package_name": "com.example.flutter_project"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCtdS4AH3i1KZ39eOeh8hKk-JXaUzVrUjQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
