@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../models/device.dart';
 import '../services/firestore_service.dart';
@@ -36,18 +37,19 @@ class DeviceProvider extends ChangeNotifier {
 
   Future<bool> addDevice({
     required Device device,
-    File? imageFile,
+    List<Uint8List> imageBytesList = const [],
     required String ownerUid,
   }) async {
     _loading = true;
     _error = null;
     notifyListeners();
     try {
-      String? imageUrl;
-      if (imageFile != null) {
-        imageUrl = await _ss.uploadDeviceImage(uid: ownerUid, imageFile: imageFile);
-      }
-      final deviceWithImage = Device(
+      // Convert each image to base64
+      final imageUrls = imageBytesList
+          .map((bytes) => base64Encode(bytes))
+          .toList();
+
+      final deviceWithImages = Device(
         id: device.id,
         ownerUid: device.ownerUid,
         ownerName: device.ownerName,
@@ -55,12 +57,14 @@ class DeviceProvider extends ChangeNotifier {
         title: device.title,
         description: device.description,
         category: device.category,
-        imageUrl: imageUrl,
+        imageUrls: imageUrls,
         pricePerDay: device.pricePerDay,
         isAvailable: device.isAvailable,
         createdAt: device.createdAt,
+        lat: device.lat,
+        lng: device.lng,
       );
-      await _fs.addDevice(deviceWithImage);
+      await _fs.addDevice(deviceWithImages);
       _loading = false;
       notifyListeners();
       return true;
@@ -76,10 +80,7 @@ class DeviceProvider extends ChangeNotifier {
     await _fs.updateDeviceAvailability(deviceId, !current);
   }
 
-  Future<void> removeDevice(String deviceId, String? imageUrl) async {
+  Future<void> removeDevice(String deviceId) async {
     await _fs.deleteDevice(deviceId);
-    if (imageUrl != null) {
-      await _ss.deleteImage(imageUrl);
-    }
   }
 }

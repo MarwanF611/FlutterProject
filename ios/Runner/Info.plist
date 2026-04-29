@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>We hebben toegang nodig tot je fotobibliotheek.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We hebben je locatie nodig om apparaten bij jou in de buurt op de kaart te tonen.</string>
+	<key>GMSApiKey</key>
+	<string>AIzaSyClv7xmdfunl7EU9u27bQ7EnFr9P32DWzY</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

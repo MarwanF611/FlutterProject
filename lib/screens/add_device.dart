@@ -1,7 +1,10 @@
-import 'dart:io';
+import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import '../constants/app_constants.dart';
 import '../models/device.dart';
 import '../providers/auth_provider.dart';
 import '../providers/device_provider.dart';
@@ -22,7 +25,9 @@ class _AddDeviceScreenState extends State<AddDeviceScreen> {
 
   String _selectedCategory = kCategories.first;
   bool _isAvailable = true;
-  File? _imageFile;
+
+  static const int _maxImages = 5;
+  final List<Uint8List> _imageBytesList = [];
 
   @override
   void dispose() {
@@ -32,22 +37,59 @@ class _AddDeviceScreenState extends State<AddDeviceScreen> {
     super.dispose();
   }
 
-  Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 800,
-      imageQuality: 80,
-    );
-    if (picked != null) {
-      setState(() => _imageFile = File(picked.path));
+  Future<Position?> _getCurrentLocation() async {
+    try {
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return null;
+      }
+      return await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+        ),
+      ).timeout(const Duration(seconds: 8));
+    } catch (_) {
+      return null;
     }
+  }
+
+  Future<void> _pickImages() async {
+    final remaining = _maxImages - _imageBytesList.length;
+    if (remaining <= 0) return;
+
+    final picker = ImagePicker();
+    final picked = await picker.pickMultiImage(
+      maxWidth: 1024,
+      imageQuality: 75,
+      limit: remaining,
+    );
+
+    if (picked.isEmpty) return;
+
+    final newBytes = await Future.wait(
+      picked.take(remaining).map((xf) => xf.readAsBytes()),
+    );
+
+    setState(() {
+      _imageBytesList.addAll(newBytes);
+    });
+  }
+
+  void _removeImage(int index) {
+    setState(() => _imageBytesList.removeAt(index));
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     final auth = context.read<AuthProvider>();
     if (auth.appUser == null) return;
+
+    final position = await _getCurrentLocation();
+    if (!mounted) return;
 
     final device = Device(
       id: '',
@@ -60,11 +102,13 @@ class _AddDeviceScreenState extends State<AddDeviceScreen> {
       pricePerDay: double.parse(_priceController.text.replaceAll(',', '.')),
       isAvailable: _isAvailable,
       createdAt: DateTime.now(),
+      lat: position?.latitude,
+      lng: position?.longitude,
     );
 
     final ok = await context.read<DeviceProvider>().addDevice(
           device: device,
-          imageFile: _imageFile,
+          imageBytesList: _imageBytesList,
           ownerUid: auth.appUser!.uid,
         );
 
@@ -91,10 +135,12 @@ class _AddDeviceScreenState extends State<AddDeviceScreen> {
   @override
   Widget build(BuildContext context) {
     final loading = context.watch<DeviceProvider>().loading;
+    final canAddMore = _imageBytesList.length < _maxImages;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Toestel toevoegen'),
-        backgroundColor: const Color(0xFF1976D2),
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -104,34 +150,78 @@ class _AddDeviceScreenState extends State<AddDeviceScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              GestureDetector(
-                onTap: _pickImage,
-                child: Container(
-                  height: 180,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF0F0F0),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[300]!),
-                  ),
-                  child: _imageFile != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.file(_imageFile!, fit: BoxFit.cover),
-                        )
-                      : Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.add_a_photo,
-                                size: 40, color: Colors.grey[400]),
-                            const SizedBox(height: 8),
-                            Text('Foto toevoegen',
-                                style: TextStyle(color: Colors.grey[500])),
-                          ],
-                        ),
+              // ── Image section ──────────────────────────────────────────
+              Text(
+                "Foto's (${_imageBytesList.length}/$_maxImages)",
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  color: AppColors.textMedium,
                 ),
               ),
+              const SizedBox(height: 10),
+              SizedBox(
+                height: 110,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    // Existing image thumbnails
+                    for (int i = 0; i < _imageBytesList.length; i++)
+                      _ImageThumb(
+                        bytes: _imageBytesList[i],
+                        onRemove: () => _removeImage(i),
+                      ),
+                    // Add button (only if slots available)
+                    if (canAddMore)
+                      GestureDetector(
+                        onTap: _pickImages,
+                        child: Container(
+                          width: 100,
+                          height: 100,
+                          margin: const EdgeInsets.only(right: 10),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.06),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.primary.withOpacity(0.3),
+                              style: BorderStyle.solid,
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add_a_photo_outlined,
+                                  size: 30,
+                                  color: AppColors.primary.withOpacity(0.7)),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Toevoegen',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.primary.withOpacity(0.7),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+
+              if (_imageBytesList.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4, bottom: 4),
+                  child: Text(
+                    'Voeg maximaal $_maxImages foto\'s toe',
+                    style: const TextStyle(
+                        fontSize: 12, color: AppColors.textLight),
+                  ),
+                ),
+
               const SizedBox(height: 20),
+
+              // ── Form fields ────────────────────────────────────────────
               TextFormField(
                 controller: _titleController,
                 decoration: _fieldDecoration('Naam van het toestel'),
@@ -148,7 +238,7 @@ class _AddDeviceScreenState extends State<AddDeviceScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                initialValue: _selectedCategory,
+                value: _selectedCategory,
                 decoration: _fieldDecoration('Categorie'),
                 items: kCategories
                     .map((c) => DropdownMenuItem(
@@ -166,8 +256,7 @@ class _AddDeviceScreenState extends State<AddDeviceScreen> {
                     const TextInputType.numberWithOptions(decimal: true),
                 validator: (v) {
                   if (v == null || v.isEmpty) return 'Vul een prijs in';
-                  final price =
-                      double.tryParse(v.replaceAll(',', '.'));
+                  final price = double.tryParse(v.replaceAll(',', '.'));
                   if (price == null || price <= 0) return 'Ongeldige prijs';
                   return null;
                 },
@@ -178,6 +267,7 @@ class _AddDeviceScreenState extends State<AddDeviceScreen> {
                 onChanged: (v) => setState(() => _isAvailable = v),
                 title: const Text('Meteen beschikbaar'),
                 contentPadding: EdgeInsets.zero,
+                activeColor: AppColors.primary,
               ),
               const SizedBox(height: 24),
               LoadingButton(
@@ -189,6 +279,51 @@ class _AddDeviceScreenState extends State<AddDeviceScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ── Image thumbnail widget ─────────────────────────────────────────────────────
+
+class _ImageThumb extends StatelessWidget {
+  final Uint8List bytes;
+  final VoidCallback onRemove;
+
+  const _ImageThumb({required this.bytes, required this.onRemove});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Container(
+          width: 100,
+          height: 100,
+          margin: const EdgeInsets.only(right: 10, top: 6),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            image: DecorationImage(
+              image: MemoryImage(bytes),
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+        Positioned(
+          top: 0,
+          right: 10,
+          child: GestureDetector(
+            onTap: onRemove,
+            child: Container(
+              width: 22,
+              height: 22,
+              decoration: const BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.close, color: Colors.white, size: 14),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

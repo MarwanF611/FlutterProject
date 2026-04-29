@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/app_user.dart';
 import '../models/device.dart';
 import '../models/reservation.dart';
+import '../models/chat.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -95,18 +96,100 @@ class FirestoreService {
       _db.collection('reservations').doc(reservationId),
       {'status': status},
     );
-    if (status == 'approved') {
-      batch.update(
-        _db.collection('devices').doc(deviceId),
-        {'isAvailable': false},
-      );
-    } else if (status == 'rejected') {
-      batch.update(
-        _db.collection('devices').doc(deviceId),
-        {'isAvailable': true},
-      );
-    }
+    // Don't mark isAvailable = false here anymore, because reservations can be for specific dates.
+    // Instead we will rely on checking approved reservations.
     await batch.commit();
+  }
+
+  Future<List<Reservation>> getApprovedReservations(String deviceId) async {
+    final snap = await _db
+        .collection('reservations')
+        .where('deviceId', isEqualTo: deviceId)
+        .where('status', isEqualTo: 'approved')
+        .get();
+    return snap.docs
+        .map((doc) => Reservation.fromMap(doc.id, doc.data()))
+        .toList();
+  }
+
+  // --- Chats ---
+
+  Stream<List<Chat>> getUserChats(String uid) {
+    return _db
+        .collection('chats')
+        .where('participants', arrayContains: uid)
+        .orderBy('updatedAt', descending: true)
+        .snapshots()
+        .map((snap) =>
+            snap.docs.map((doc) => Chat.fromMap(doc.id, doc.data())).toList());
+  }
+
+  Stream<List<ChatMessage>> getChatMessages(String chatId) {
+    return _db
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((doc) => ChatMessage.fromMap(doc.id, doc.data()))
+            .toList());
+  }
+
+  Future<void> sendMessage(String chatId, ChatMessage message) async {
+    final batch = _db.batch();
+    
+    // Add raw message to subcollection
+    final messageRef = _db
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .doc(message.id.isEmpty ? null : message.id);
+    batch.set(messageRef, message.toMap());
+
+    // Update last message in the chat
+    final chatRef = _db.collection('chats').doc(chatId);
+    batch.update(chatRef, {
+      'lastMessage': message.text,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    await batch.commit();
+  }
+
+  Future<String> getOrCreateChat({
+    required String tenantUid,
+    required String ownerUid,
+    required String tenantName,
+    required String ownerName,
+    required String deviceId,
+    required String deviceTitle,
+  }) async {
+    // Check if chat already exists for these 2 people and this device
+    final qs = await _db
+        .collection('chats')
+        .where('participants', arrayContains: tenantUid)
+        .get();
+    
+    for (var doc in qs.docs) {
+      final chat = Chat.fromMap(doc.id, doc.data());
+      if (chat.participants.contains(ownerUid) && chat.deviceId == deviceId) {
+        return chat.id;
+      }
+    }
+
+    // Create new
+    final newChat = Chat(
+      id: '',
+      participants: [tenantUid, ownerUid],
+      participantNames: {tenantUid: tenantName, ownerUid: ownerName},
+      deviceId: deviceId,
+      deviceTitle: deviceTitle,
+      lastMessage: '',
+      updatedAt: DateTime.now(),
+    );
+    final ref = await _db.collection('chats').add(newChat.toMap());
+    return ref.id;
   }
 
   // --- Users ---

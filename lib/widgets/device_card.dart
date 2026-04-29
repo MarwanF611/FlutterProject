@@ -1,4 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../constants/app_constants.dart';
 import '../models/device.dart';
@@ -25,14 +25,21 @@ class DeviceCard extends StatelessWidget {
                 color: AppColors.primaryDark.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
-              child: device.imageUrl != null
-                  ? CachedNetworkImage(
-                      imageUrl: device.imageUrl!,
-                      fit: BoxFit.contain,
-                      placeholder: (context, url) => const Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                      errorWidget: (context, url, error) => _placeholder(),
+              child: device.imageUrls.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      child: Builder(builder: (context) {
+                        try {
+                          return Image.memory(
+                            base64Decode(device.imageUrls.first),
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                          );
+                        } catch (_) {
+                          return _placeholder();
+                        }
+                      }),
                     )
                   : _placeholder(),
             ),

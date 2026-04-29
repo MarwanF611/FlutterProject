@@ -130,7 +130,7 @@ class _DeviceOwnerTile extends StatelessWidget {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              provider.removeDevice(device.id, device.imageUrl);
+              provider.removeDevice(device.id);
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: const Text('Verwijderen'),

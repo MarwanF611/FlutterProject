@@ -9,6 +9,7 @@ import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
 import 'providers/device_provider.dart';
 import 'providers/reservation_provider.dart';
+import 'providers/chat_provider.dart';
 import 'screens/add_device.dart';
 import 'screens/bottom_nav.dart';
 import 'screens/login.dart';
@@ -31,6 +32,9 @@ void main() async {
           ),
           ChangeNotifierProvider(
             create: (_) => ReservationProvider(FirestoreService()),
+          ),
+          ChangeNotifierProvider(
+            create: (_) => ChatProvider(FirestoreService()),
           ),
         ],
         child: const MyApp(),

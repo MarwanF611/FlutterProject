@@ -33,10 +33,12 @@ class Device {
   final String title;
   final String description;
   final String category;
-  final String? imageUrl;
+  final List<String> imageUrls;
   final double pricePerDay;
   final bool isAvailable;
   final DateTime createdAt;
+  final double? lat;
+  final double? lng;
 
   Device({
     required this.id,
@@ -46,10 +48,12 @@ class Device {
     required this.title,
     required this.description,
     required this.category,
-    this.imageUrl,
+    this.imageUrls = const [],
     required this.pricePerDay,
     required this.isAvailable,
     required this.createdAt,
+    this.lat,
+    this.lng,
   });
 
   factory Device.fromMap(String id, Map<String, dynamic> map) {
@@ -61,10 +65,12 @@ class Device {
       title: map['title'] as String,
       description: map['description'] as String,
       category: map['category'] as String,
-      imageUrl: map['imageUrl'] as String?,
+      imageUrls: (map['imageUrls'] as List<dynamic>? ?? []).cast<String>(),
       pricePerDay: (map['pricePerDay'] as num).toDouble(),
       isAvailable: map['isAvailable'] as bool,
       createdAt: (map['createdAt'] as Timestamp).toDate(),
+      lat: (map['lat'] as num?)?.toDouble(),
+      lng: (map['lng'] as num?)?.toDouble(),
     );
   }
 
@@ -76,10 +82,12 @@ class Device {
       'title': title,
       'description': description,
       'category': category,
-      'imageUrl': imageUrl,
+      'imageUrls': imageUrls,
       'pricePerDay': pricePerDay,
       'isAvailable': isAvailable,
       'createdAt': Timestamp.fromDate(createdAt),
+      if (lat != null) 'lat': lat,
+      if (lng != null) 'lng': lng,
     };
   }
 }

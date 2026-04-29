@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../constants/app_constants.dart';
 import 'homepage.dart';
+import 'map_screen.dart';
 import 'my_devices.dart';
 import 'my_reservations.dart';
 import 'reservation_requests.dart';
 import 'profile.dart';
+import 'chats_screen.dart';
 
 class BottomNavScreen extends StatefulWidget {
   const BottomNavScreen({super.key});
@@ -22,6 +24,8 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
       const HomeScreen(),
       const MyDevicesScreen(),
       const ReservationsTabScreen(),
+      const MapScreen(),
+      const ChatsScreen(),
       const ProfileScreen(),
     ];
 
@@ -52,10 +56,21 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
             label: 'Reservaties',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.map_outlined),
+            activeIcon: Icon(Icons.map),
+            label: 'Kaart',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chat_bubble_outline),
+            activeIcon: Icon(Icons.chat_bubble),
+            label: 'Berichten',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
             activeIcon: Icon(Icons.person),
             label: 'Profiel',
           ),
+          
         ],
       ),
     );

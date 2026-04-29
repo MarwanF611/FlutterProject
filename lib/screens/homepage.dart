@@ -5,6 +5,7 @@ import '../models/device.dart';
 import '../providers/device_provider.dart';
 import '../widgets/category_chip.dart';
 import '../widgets/device_card.dart';
+import 'all_devices_screen.dart';
 import 'device_detail.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -28,12 +29,7 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.lg),
 
-              // Promo Banner
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                child: _buildPromoBanner(),
-              ),
-              const SizedBox(height: AppSpacing.lg),
+              
 
               // Categories Section
               Column(
@@ -61,7 +57,11 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                    child: _buildSectionTitle('Beschikbare Toestellen', onPressed: () {}),
+                    child: _buildSectionTitle('Beschikbare Toestellen', onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => const AllDevicesScreen(title: 'Alle Toestellen'),
+                      ));
+                    }),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   StreamBuilder<List<Device>>(
@@ -135,7 +135,11 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                    child: _buildSectionTitle('Recent Toegevoegd', onPressed: () {}),
+                    child: _buildSectionTitle('Recent Toegevoegd', onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => const AllDevicesScreen(title: 'Recent Toegevoegd', recentOnly: true),
+                      ));
+                    }),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   StreamBuilder<List<Device>>(
@@ -211,35 +215,6 @@ class HomeScreen extends StatelessWidget {
           badge: 3,
         ),
       ],
-    );
-  }
-
-  Widget _buildPromoBanner() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.lg,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.primaryDark,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-      ),
-      child: const Text.rich(
-        TextSpan(
-          style: TextStyle(color: Colors.white),
-          children: [
-            TextSpan(
-              text: 'Exclusieve Aanbieding\n',
-              style: AppTypography.body2,
-            ),
-            TextSpan(
-              text: 'Tot 30% Korting',
-              style: AppTypography.headline3,
-            ),
-          ],
-        ),
-      ),
     );
   }
 

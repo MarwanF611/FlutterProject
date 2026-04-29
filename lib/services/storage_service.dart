@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:uuid/uuid.dart';
 
@@ -8,11 +8,11 @@ class StorageService {
 
   Future<String> uploadDeviceImage({
     required String uid,
-    required File imageFile,
+    required Uint8List imageBytes,
   }) async {
     final fileName = '${_uuid.v4()}.jpg';
     final ref = _storage.ref().child('device_images/$uid/$fileName');
-    await ref.putFile(imageFile);
+    await ref.putData(imageBytes, SettableMetadata(contentType: 'image/jpeg'));
     return await ref.getDownloadURL();
   }
 
