@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../constants/app_constants.dart';
 import '../models/chat.dart';
 import '../models/device.dart';
+import '../models/reservation.dart';
 import '../providers/auth_provider.dart';
 import '../providers/chat_provider.dart';
 import '../providers/reservation_provider.dart';
@@ -32,6 +33,7 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
   bool _showFullDesc = false;
   bool _contactLoading = false;
   final _fmt = DateFormat('dd/MM/yyyy');
+  List<Reservation> _approvedReservations = [];
 
   int get _days {
     if (_startDate == null || _endDate == null) return 0;
@@ -40,13 +42,62 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
 
   double get _total => _days * widget.device.pricePerDay;
 
+  bool _isDateBlocked(DateTime date) {
+    final d = DateTime(date.year, date.month, date.day);
+    for (final r in _approvedReservations) {
+      final s = DateTime(
+          r.startDate.year, r.startDate.month, r.startDate.day);
+      final e =
+          DateTime(r.endDate.year, r.endDate.month, r.endDate.day);
+      if (!d.isBefore(s) && !d.isAfter(e)) return true;
+    }
+    return false;
+  }
+
+  bool _hasConflict() {
+    if (_startDate == null || _endDate == null) return false;
+    return _approvedReservations.any((r) =>
+        !_startDate!.isAfter(r.endDate) && !_endDate!.isBefore(r.startDate));
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadReservations());
+  }
+
+  Future<void> _loadReservations() async {
+    try {
+      final reservations = await context
+          .read<ReservationProvider>()
+          .getApprovedReservations(widget.device.id);
+      if (mounted) setState(() => _approvedReservations = reservations);
+    } catch (_) {
+      // Als laden mislukt: geen datums blokkeren, boeken blijft gewoon werken.
+    }
+  }
+
+  /// Returns the first non-blocked date on or after [from].
+  DateTime _firstAvailableFrom(DateTime from) {
+    var d = DateTime(from.year, from.month, from.day);
+    final limit = d.add(const Duration(days: 365));
+    while (_isDateBlocked(d) && d.isBefore(limit)) {
+      d = d.add(const Duration(days: 1));
+    }
+    return d;
+  }
+
   Future<void> _pickDate(bool isStart) async {
     final now = DateTime.now();
+    final base = isStart ? now : (_startDate ?? now);
+    // Ensure the initial date shown in the picker is not blocked
+    final initialDate = _firstAvailableFrom(base);
     final picked = await showDatePicker(
       context: context,
-      initialDate: isStart ? now : (_startDate ?? now),
+      initialDate: initialDate,
       firstDate: now,
       lastDate: now.add(const Duration(days: 365)),
+      selectableDayPredicate: (date) => !_isDateBlocked(date),
     );
     if (picked == null) return;
     setState(() {
@@ -150,8 +201,11 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
     final auth = context.watch<AuthProvider>();
     final reservationLoading = context.watch<ReservationProvider>().loading;
     final isOwner = auth.user?.uid == device.ownerUid;
-    final canReserve =
-        !isOwner && device.isAvailable && _startDate != null && _endDate != null;
+    final canReserve = !isOwner &&
+        device.isAvailable &&
+        _startDate != null &&
+        _endDate != null &&
+        !_hasConflict();
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -396,6 +450,8 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
                               days: _days,
                               total: _total,
                               fmt: _fmt,
+                              bookedPeriods: _approvedReservations,
+                              hasConflict: _hasConflict(),
                               onPickStart: () => _pickDate(true),
                               onPickEnd: _startDate != null
                                   ? () => _pickDate(false)
@@ -466,11 +522,13 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
                                       color: Colors.white, strokeWidth: 2),
                                 )
                               : Text(
-                                  device.isAvailable
-                                      ? (canReserve
-                                          ? 'Reserveer'
-                                          : 'Kies datums')
-                                      : 'Niet beschikbaar',
+                                  !device.isAvailable
+                                      ? 'Niet beschikbaar'
+                                      : (_startDate == null || _endDate == null)
+                                          ? 'Kies datums'
+                                          : _hasConflict()
+                                              ? 'Datum bezet'
+                                              : 'Reserveer',
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
                                     color: canReserve
@@ -637,6 +695,8 @@ class _ReservationSection extends StatelessWidget {
   final int days;
   final double total;
   final DateFormat fmt;
+  final List<Reservation> bookedPeriods;
+  final bool hasConflict;
   final VoidCallback onPickStart;
   final VoidCallback? onPickEnd;
 
@@ -646,6 +706,8 @@ class _ReservationSection extends StatelessWidget {
     required this.days,
     required this.total,
     required this.fmt,
+    required this.bookedPeriods,
+    required this.hasConflict,
     required this.onPickStart,
     required this.onPickEnd,
   });
@@ -658,6 +720,30 @@ class _ReservationSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Geboekte periodes
+          if (bookedPeriods.isNotEmpty) ...[
+            const Text(
+              'Al geboekt',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            ...bookedPeriods.map((r) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.block, size: 13, color: Colors.red),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${DateFormat('dd/MM/yyyy').format(r.startDate)}  →  ${DateFormat('dd/MM/yyyy').format(r.endDate)}',
+                        style: const TextStyle(
+                            fontSize: 13, color: Colors.red),
+                      ),
+                    ],
+                  ),
+                )),
+            const SizedBox(height: AppSpacing.lg),
+          ],
+
           const Text(
             'Reserveringsperiode',
             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
@@ -682,7 +768,35 @@ class _ReservationSection extends StatelessWidget {
               ),
             ],
           ),
-          if (days > 0) ...[
+
+          // Conflict waarschuwing
+          if (hasConflict) ...[
+            const SizedBox(height: AppSpacing.md),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded,
+                      size: 16, color: Colors.red),
+                  SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Deze periode overlapt met een bestaande reservering.',
+                      style: TextStyle(fontSize: 12, color: Colors.red),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          if (days > 0 && !hasConflict) ...[
             const SizedBox(height: AppSpacing.lg),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

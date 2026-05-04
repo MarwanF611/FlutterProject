@@ -22,6 +22,10 @@ class ReservationProvider extends ChangeNotifier {
     return _fs.getReservationsForOwner(ownerUid);
   }
 
+  Future<List<Reservation>> getApprovedReservations(String deviceId) {
+    return _fs.getApprovedReservations(deviceId);
+  }
+
   Future<bool> reserve({
     required Device device,
     required DateTime start,
@@ -32,8 +36,24 @@ class ReservationProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
+      // Server-side conflict check — wrapped separately so a failure here
+      // never blocks the actual reservation from being created.
+      try {
+        final approved = await _fs.getApprovedReservations(device.id);
+        final conflict = approved.any(
+            (r) => !start.isAfter(r.endDate) && !end.isBefore(r.startDate));
+        if (conflict) {
+          _error =
+              'De geselecteerde periode overlapt met een bestaande reservering.';
+          _loading = false;
+          notifyListeners();
+          return false;
+        }
+      } catch (_) {
+        // Conflict check failed (e.g. permissions) — proceed with reservation.
+      }
+
       final days = end.difference(start).inDays + 1;
-      final totalPrice = days * device.pricePerDay;
       final reservation = Reservation(
         id: '',
         deviceId: device.id,
@@ -43,7 +63,7 @@ class ReservationProvider extends ChangeNotifier {
         ownerUid: device.ownerUid,
         startDate: start,
         endDate: end,
-        totalPrice: totalPrice,
+        totalPrice: days * device.pricePerDay,
         status: 'pending',
         createdAt: DateTime.now(),
       );
