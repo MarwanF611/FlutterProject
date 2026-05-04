@@ -180,10 +180,10 @@ class _AddDeviceScreenState extends State<AddDeviceScreen> {
                           height: 100,
                           margin: const EdgeInsets.only(right: 10),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.06),
+                            color: AppColors.primary.withValues(alpha: 0.06),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: AppColors.primary.withOpacity(0.3),
+                              color: AppColors.primary.withValues(alpha: 0.3),
                               style: BorderStyle.solid,
                             ),
                           ),
@@ -192,13 +192,13 @@ class _AddDeviceScreenState extends State<AddDeviceScreen> {
                             children: [
                               Icon(Icons.add_a_photo_outlined,
                                   size: 30,
-                                  color: AppColors.primary.withOpacity(0.7)),
+                                  color: AppColors.primary.withValues(alpha: 0.7)),
                               const SizedBox(height: 4),
                               Text(
                                 'Toevoegen',
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: AppColors.primary.withOpacity(0.7),
+                                  color: AppColors.primary.withValues(alpha: 0.7),
                                 ),
                               ),
                             ],
@@ -238,7 +238,7 @@ class _AddDeviceScreenState extends State<AddDeviceScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _selectedCategory,
+                initialValue: _selectedCategory,
                 decoration: _fieldDecoration('Categorie'),
                 items: kCategories
                     .map((c) => DropdownMenuItem(
@@ -267,7 +267,7 @@ class _AddDeviceScreenState extends State<AddDeviceScreen> {
                 onChanged: (v) => setState(() => _isAvailable = v),
                 title: const Text('Meteen beschikbaar'),
                 contentPadding: EdgeInsets.zero,
-                activeColor: AppColors.primary,
+                activeThumbColor: AppColors.primary,
               ),
               const SizedBox(height: 24),
               LoadingButton(

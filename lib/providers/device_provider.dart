@@ -7,13 +7,12 @@ import '../services/storage_service.dart';
 
 class DeviceProvider extends ChangeNotifier {
   final FirestoreService _fs;
-  final StorageService _ss;
 
   String? _selectedCategory;
   bool _loading = false;
   String? _error;
 
-  DeviceProvider(this._fs, this._ss);
+  DeviceProvider(this._fs, StorageService ss);
 
   String? get selectedCategory => _selectedCategory;
   bool get loading => _loading;

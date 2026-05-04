@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -356,7 +355,7 @@ class _AllDevicesScreenState extends State<AllDevicesScreen> {
                   border: Border.all(color: Colors.white, width: 2.5),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.4),
+                      color: AppColors.primary.withValues(alpha: 0.4),
                       blurRadius: 8,
                       spreadRadius: 2,
                     ),
@@ -387,7 +386,7 @@ class _AllDevicesScreenState extends State<AllDevicesScreen> {
               border: Border.all(color: Colors.white, width: 2),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.blue.withOpacity(0.4),
+                  color: Colors.blue.withValues(alpha: 0.4),
                   blurRadius: 8,
                   spreadRadius: 3,
                 ),
@@ -426,7 +425,7 @@ class _AllDevicesScreenState extends State<AllDevicesScreen> {
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 8,
                   ),
                 ],

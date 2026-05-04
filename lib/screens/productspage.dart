@@ -36,12 +36,12 @@ class ProductsScreen extends StatelessWidget {
 
 class ProductCard extends StatelessWidget {
   const ProductCard({
-    Key? key,
+    super.key,
     this.width = 140,
     this.aspectRetio = 1.02,
     required this.product,
     required this.onPress,
-  }) : super(key: key);
+  });
 
   final double width, aspectRetio;
   final Product product;
@@ -61,7 +61,7 @@ class ProductCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF979797).withOpacity(0.1),
+                  color: const Color(0xFF979797).withValues(alpha:0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Image.network(product.images[0]),
@@ -93,8 +93,8 @@ class ProductCard extends StatelessWidget {
                     width: 24,
                     decoration: BoxDecoration(
                       color: product.isFavourite
-                          ? const Color(0xFFFF7643).withOpacity(0.15)
-                          : const Color(0xFF979797).withOpacity(0.1),
+                          ? const Color(0xFFFF7643).withValues(alpha:0.15)
+                          : const Color(0xFF979797).withValues(alpha:0.1),
                       shape: BoxShape.circle,
                     ),
                     child: SvgPicture.string(

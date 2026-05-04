@@ -112,7 +112,7 @@ class _MapScreenState extends State<MapScreen> {
                 Container(
                   padding: const EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha:0.1),
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Icon(
@@ -201,7 +201,7 @@ class _MapScreenState extends State<MapScreen> {
                   boxShadow: [
                     BoxShadow(
                       color: (isSelected ? AppColors.accent : AppColors.primary)
-                          .withOpacity(0.4),
+                          .withValues(alpha:0.4),
                       blurRadius: 8,
                       spreadRadius: 2,
                     ),
@@ -292,7 +292,7 @@ class _MapScreenState extends State<MapScreen> {
                     border: Border.all(color: Colors.white, width: 2),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.blue.withOpacity(0.4),
+                        color: Colors.blue.withValues(alpha:0.4),
                         blurRadius: 8,
                         spreadRadius: 3,
                       ),
@@ -336,7 +336,7 @@ class _MapScreenState extends State<MapScreen> {
                     borderRadius: BorderRadius.circular(AppRadius.circle),
                     boxShadow: [
                       BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha:0.1),
                           blurRadius: 8,
                           offset: const Offset(0, 2)),
                     ],

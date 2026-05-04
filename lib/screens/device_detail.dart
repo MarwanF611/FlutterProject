@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
@@ -484,7 +483,7 @@ class _DeviceImageState extends State<_DeviceImage> {
                     decoration: BoxDecoration(
                       color: _currentPage == i
                           ? Colors.white
-                          : Colors.white.withOpacity(0.5),
+                          : Colors.white.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -499,7 +498,7 @@ class _DeviceImageState extends State<_DeviceImage> {
               padding:
                   const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.45),
+                color: Colors.black.withValues(alpha: 0.45),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
