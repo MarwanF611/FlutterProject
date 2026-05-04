@@ -16,11 +16,13 @@ import 'screens/login.dart';
 import 'screens/register.dart';
 import 'services/auth_service.dart';
 import 'services/firestore_service.dart';
+import 'services/notification_service.dart';
 import 'services/storage_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await NotificationService.initialize();
   runApp(
     DevicePreview(
       enabled: false,
@@ -77,16 +79,29 @@ class MyApp extends StatelessWidget {
               body: Center(child: CircularProgressIndicator()),
             );
           }
-          return snapshot.hasData
-              ? const BottomNavScreen()
-              : const LoginScreen();
+
+          final chatProvider = context.read<ChatProvider>();
+
+          if (snapshot.hasData) {
+            // Start notification listener when user logs in
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              chatProvider.startMessageListener(snapshot.data!.uid);
+            });
+            return const BottomNavScreen();
+          } else {
+            // Stop listener when user logs out
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              chatProvider.stopMessageListener();
+            });
+            return const LoginScreen();
+          }
         },
       ),
       routes: {
         '/login': (ctx) => const LoginScreen(),
         '/register': (ctx) => const RegisterScreen(),
         '/home': (ctx) => const BottomNavScreen(),
-        '/add-device': (ctx) => const AddDeviceScreen(), // edit-modus via Navigator.push met device parameter
+        '/add-device': (ctx) => const AddDeviceScreen(),
       },
     );
   }

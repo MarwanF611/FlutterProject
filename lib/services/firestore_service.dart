@@ -122,10 +122,14 @@ class FirestoreService {
     return _db
         .collection('chats')
         .where('participants', arrayContains: uid)
-        .orderBy('updatedAt', descending: true)
         .snapshots()
-        .map((snap) =>
-            snap.docs.map((doc) => Chat.fromMap(doc.id, doc.data())).toList());
+        .map((snap) {
+      final chats = snap.docs
+          .map((doc) => Chat.fromMap(doc.id, doc.data()))
+          .toList();
+      chats.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      return chats;
+    });
   }
 
   Stream<List<ChatMessage>> getChatMessages(String chatId) {

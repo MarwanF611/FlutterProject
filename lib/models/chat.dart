@@ -27,7 +27,9 @@ class Chat {
       deviceId: map['deviceId'] ?? '',
       deviceTitle: map['deviceTitle'] ?? '',
       lastMessage: map['lastMessage'] ?? '',
-      updatedAt: (map['updatedAt'] as Timestamp).toDate(),
+      updatedAt: map['updatedAt'] != null
+          ? (map['updatedAt'] as Timestamp).toDate()
+          : DateTime.now(),
     );
   }
 
@@ -61,7 +63,9 @@ class ChatMessage {
       id: id,
       senderId: map['senderId'] ?? '',
       text: map['text'] ?? '',
-      createdAt: (map['createdAt'] as Timestamp).toDate(),
+      createdAt: map['createdAt'] != null
+          ? (map['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
     );
   }
 

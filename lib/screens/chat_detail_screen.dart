@@ -23,6 +23,15 @@ class ChatDetailScreen extends StatefulWidget {
 
 class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final _textController = TextEditingController();
+  late final Stream<List<ChatMessage>> _messagesStream;
+
+  @override
+  void initState() {
+    super.initState();
+    // Cache the stream to avoid recreating it on every rebuild
+    _messagesStream =
+        context.read<ChatProvider>().chatMessages(widget.chat.id);
+  }
 
   Future<void> _sendMessage() async {
     final text = _textController.text.trim();
@@ -61,9 +70,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         children: [
           Expanded(
             child: StreamBuilder<List<ChatMessage>>(
-              stream: context
-                  .read<ChatProvider>()
-                  .chatMessages(widget.chat.id),
+              stream: _messagesStream,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -74,7 +81,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 }
 
                 return ListView.builder(
-                  reverse: true, // Display newest at the bottom
+                  reverse: true,
                   padding: const EdgeInsets.all(AppSpacing.md),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
@@ -167,6 +174,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                             horizontal: 20, vertical: 10),
                       ),
                       textCapitalization: TextCapitalization.sentences,
+                      onSubmitted: (_) => _sendMessage(),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),

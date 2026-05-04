@@ -7,13 +7,30 @@ import '../providers/auth_provider.dart';
 import '../providers/chat_provider.dart';
 import 'chat_detail_screen.dart';
 
-class ChatsScreen extends StatelessWidget {
+class ChatsScreen extends StatefulWidget {
   const ChatsScreen({super.key});
 
   @override
+  State<ChatsScreen> createState() => _ChatsScreenState();
+}
+
+class _ChatsScreenState extends State<ChatsScreen> {
+  Stream<List<Chat>>? _chatsStream;
+  String? _currentUid;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final uid = context.read<AuthProvider>().appUser?.uid;
+    if (uid != null && uid != _currentUid) {
+      _currentUid = uid;
+      _chatsStream = context.read<ChatProvider>().userChats(uid);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
-    final uid = auth.appUser?.uid;
+    final uid = context.watch<AuthProvider>().appUser?.uid;
 
     if (uid == null) {
       return const Scaffold(
@@ -29,8 +46,13 @@ class ChatsScreen extends StatelessWidget {
         elevation: 0,
       ),
       body: StreamBuilder<List<Chat>>(
-        stream: context.read<ChatProvider>().userChats(uid),
+        stream: _chatsStream,
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(
+              child: Text('Fout: ${snapshot.error}'),
+            );
+          }
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -83,15 +105,25 @@ class ChatsScreen extends StatelessWidget {
                   children: [
                     Text(
                       'Toestel: ${chat.deviceTitle}',
-                      style: TextStyle(
+                      style: const TextStyle(
                           fontSize: 12,
                           color: AppColors.primary,
                           fontWeight: FontWeight.w500),
                     ),
                     Text(
-                      chat.lastMessage,
+                      chat.lastMessage.isEmpty
+                          ? 'Geen berichten nog'
+                          : chat.lastMessage,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: chat.lastMessage.isEmpty
+                            ? AppColors.textLight
+                            : AppColors.textDark,
+                        fontStyle: chat.lastMessage.isEmpty
+                            ? FontStyle.italic
+                            : FontStyle.normal,
+                      ),
                     ),
                   ],
                 ),
