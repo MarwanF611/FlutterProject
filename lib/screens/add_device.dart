@@ -87,8 +87,8 @@ class _AddDeviceScreenState extends State<AddDeviceScreen> {
 
     final picker = ImagePicker();
     final picked = await picker.pickMultiImage(
-      maxWidth: 1024,
-      imageQuality: 75,
+      maxWidth: 800,
+      imageQuality: 55,
       limit: remaining,
     );
     if (picked.isEmpty) return;

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../models/device.dart';
@@ -6,6 +7,7 @@ import '../services/storage_service.dart';
 
 class DeviceProvider extends ChangeNotifier {
   final FirestoreService _fs;
+  // ignore: unused_field
   final StorageService _ss;
 
   String? _selectedCategory;
@@ -40,12 +42,7 @@ class DeviceProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      // Upload images to Firebase Storage, store URLs in Firestore
-      final imageUrls = await Future.wait(
-        imageBytesList.map(
-          (bytes) => _ss.uploadDeviceImage(uid: ownerUid, imageBytes: bytes),
-        ),
-      );
+      final imageUrls = imageBytesList.map(base64Encode).toList();
 
       final deviceWithImages = Device(
         id: device.id,
@@ -84,11 +81,8 @@ class DeviceProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      final newUrls = await Future.wait(
-        newImageBytesList.map(
-          (bytes) => _ss.uploadDeviceImage(uid: ownerUid, imageBytes: bytes),
-        ),
-      );
+      final newBase64 = newImageBytesList.map(base64Encode).toList();
+
       final updated = Device(
         id: device.id,
         ownerUid: device.ownerUid,
@@ -97,7 +91,7 @@ class DeviceProvider extends ChangeNotifier {
         title: device.title,
         description: device.description,
         category: device.category,
-        imageUrls: [...keepImageUrls, ...newUrls],
+        imageUrls: [...keepImageUrls, ...newBase64],
         pricePerDay: device.pricePerDay,
         isAvailable: device.isAvailable,
         createdAt: device.createdAt,
