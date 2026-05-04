@@ -74,6 +74,48 @@ class DeviceProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> updateDevice({
+    required Device device,
+    List<Uint8List> newImageBytesList = const [],
+    List<String> keepImageUrls = const [],
+    required String ownerUid,
+  }) async {
+    _loading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      final newUrls = await Future.wait(
+        newImageBytesList.map(
+          (bytes) => _ss.uploadDeviceImage(uid: ownerUid, imageBytes: bytes),
+        ),
+      );
+      final updated = Device(
+        id: device.id,
+        ownerUid: device.ownerUid,
+        ownerName: device.ownerName,
+        ownerCity: device.ownerCity,
+        title: device.title,
+        description: device.description,
+        category: device.category,
+        imageUrls: [...keepImageUrls, ...newUrls],
+        pricePerDay: device.pricePerDay,
+        isAvailable: device.isAvailable,
+        createdAt: device.createdAt,
+        lat: device.lat,
+        lng: device.lng,
+      );
+      await _fs.updateDevice(updated);
+      _loading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = 'Kon toestel niet bijwerken. Probeer opnieuw.';
+      _loading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<void> toggleAvailability(String deviceId, bool current) async {
     await _fs.updateDeviceAvailability(deviceId, !current);
   }

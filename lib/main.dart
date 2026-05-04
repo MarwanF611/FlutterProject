@@ -86,7 +86,7 @@ class MyApp extends StatelessWidget {
         '/login': (ctx) => const LoginScreen(),
         '/register': (ctx) => const RegisterScreen(),
         '/home': (ctx) => const BottomNavScreen(),
-        '/add-device': (ctx) => const AddDeviceScreen(),
+        '/add-device': (ctx) => const AddDeviceScreen(), // edit-modus via Navigator.push met device parameter
       },
     );
   }

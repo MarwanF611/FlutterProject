@@ -55,6 +55,10 @@ class FirestoreService {
         .update({'isAvailable': isAvailable});
   }
 
+  Future<void> updateDevice(Device device) {
+    return _db.collection('devices').doc(device.id).update(device.toMap());
+  }
+
   Future<void> deleteDevice(String deviceId) {
     return _db.collection('devices').doc(deviceId).delete();
   }
