@@ -16,7 +16,6 @@ class DeviceCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Image Container
           AspectRatio(
             aspectRatio: 1.02,
             child: Container(
@@ -28,25 +27,12 @@ class DeviceCard extends StatelessWidget {
               child: device.imageUrls.isNotEmpty
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(AppRadius.sm),
-                      child: Builder(builder: (context) {
-                        try {
-                          return Image.memory(
-                            base64Decode(device.imageUrls.first),
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
-                          );
-                        } catch (_) {
-                          return _placeholder();
-                        }
-                      }),
+                      child: _buildImage(device.imageUrls.first),
                     )
                   : _placeholder(),
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-
-          // Title
           Text(
             device.title,
             style: AppTypography.body2,
@@ -54,8 +40,6 @@ class DeviceCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: AppSpacing.sm),
-
-          // Price and Favorite Row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -86,8 +70,6 @@ class DeviceCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-
-          // Owner info
           Text(
             '${device.ownerName} • ${device.ownerCity}',
             style: AppTypography.body3,
@@ -97,6 +79,28 @@ class DeviceCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildImage(String url) {
+    if (url.startsWith('http')) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (context, error, stack) => _placeholder(),
+      );
+    }
+    try {
+      return Image.memory(
+        base64Decode(url),
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      );
+    } catch (_) {
+      return _placeholder();
+    }
   }
 
   Widget _placeholder() {

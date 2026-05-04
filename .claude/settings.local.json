@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(& \"C:\\\\Users\\\\rtazi\\\\flutter\\\\bin\\\\flutter.bat\" devices 2>&1)"
+    ]
+  }
+}

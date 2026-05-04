@@ -4,9 +4,12 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../constants/app_constants.dart';
+import '../models/chat.dart';
 import '../models/device.dart';
 import '../providers/auth_provider.dart';
+import '../providers/chat_provider.dart';
 import '../providers/reservation_provider.dart';
+import 'chat_detail_screen.dart';
 
 const _heartSvg =
     '''<svg width="18" height="16" viewBox="0 0 18 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -27,6 +30,7 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
   DateTime? _endDate;
   bool _isFav = false;
   bool _showFullDesc = false;
+  bool _contactLoading = false;
   final _fmt = DateFormat('dd/MM/yyyy');
 
   int get _days {
@@ -94,12 +98,60 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
     }
   }
 
+  Future<void> _contactOwner() async {
+    final auth = context.read<AuthProvider>();
+    if (auth.appUser == null) return;
+
+    setState(() => _contactLoading = true);
+    try {
+      final device = widget.device;
+      final chatId = await context.read<ChatProvider>().getOrCreateChat(
+            tenantUid: auth.appUser!.uid,
+            ownerUid: device.ownerUid,
+            tenantName: auth.appUser!.displayName,
+            ownerName: device.ownerName,
+            deviceId: device.id,
+            deviceTitle: device.title,
+          );
+
+      if (!mounted) return;
+
+      final chat = Chat(
+        id: chatId,
+        participants: [auth.appUser!.uid, device.ownerUid],
+        participantNames: {
+          auth.appUser!.uid: auth.appUser!.displayName,
+          device.ownerUid: device.ownerName,
+        },
+        deviceId: device.id,
+        deviceTitle: device.title,
+        lastMessage: '',
+        updatedAt: DateTime.now(),
+      );
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ChatDetailScreen(
+            chat: chat,
+            currentUserId: auth.appUser!.uid,
+            otherUserName: device.ownerName,
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _contactLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final device = widget.device;
-    final loading = context.watch<ReservationProvider>().loading;
+    final auth = context.watch<AuthProvider>();
+    final reservationLoading = context.watch<ReservationProvider>().loading;
+    final isOwner = auth.user?.uid == device.ownerUid;
     final canReserve =
-        device.isAvailable && _startDate != null && _endDate != null;
+        !isOwner && device.isAvailable && _startDate != null && _endDate != null;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -129,8 +181,7 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(14),
@@ -166,19 +217,14 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
       body: ListView(
         padding: EdgeInsets.zero,
         children: [
-          // Hero image
           _DeviceImage(device: device),
-
-          // White rounded layer — title, description
           _TopRoundedContainer(
             color: Colors.white,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Title row + heart
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
                   child: Text(
                     device.title,
                     style: const TextStyle(
@@ -240,39 +286,41 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
                         ),
                       ),
                     ),
-                    // Heart button (visual favourite toggle)
-                    GestureDetector(
-                      onTap: () => setState(() => _isFav = !_isFav),
-                      child: Container(
-                        margin: const EdgeInsets.only(top: AppSpacing.sm),
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        width: 56,
-                        decoration: BoxDecoration(
-                          color: _isFav
-                              ? const Color(0xFFFFE6E6)
-                              : const Color(0xFFF5F6F9),
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(20),
-                            bottomLeft: Radius.circular(20),
+                    // Hart knop (niet voor eigenaar)
+                    if (!isOwner)
+                      GestureDetector(
+                        onTap: () => setState(() => _isFav = !_isFav),
+                        child: Container(
+                          margin:
+                              const EdgeInsets.only(top: AppSpacing.sm),
+                          padding: const EdgeInsets.all(AppSpacing.lg),
+                          width: 56,
+                          decoration: BoxDecoration(
+                            color: _isFav
+                                ? const Color(0xFFFFE6E6)
+                                : const Color(0xFFF5F6F9),
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(20),
+                              bottomLeft: Radius.circular(20),
+                            ),
                           ),
-                        ),
-                        child: SvgPicture.string(
-                          _heartSvg,
-                          colorFilter: ColorFilter.mode(
-                            _isFav
-                                ? const Color(0xFFFF4848)
-                                : const Color(0xFFDBDEE4),
-                            BlendMode.srcIn,
+                          child: SvgPicture.string(
+                            _heartSvg,
+                            colorFilter: ColorFilter.mode(
+                              _isFav
+                                  ? const Color(0xFFFF4848)
+                                  : const Color(0xFFDBDEE4),
+                              BlendMode.srcIn,
+                            ),
+                            height: 16,
                           ),
-                          height: 16,
                         ),
                       ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.lg),
 
-                // Description
+                // Beschrijving
                 Padding(
                   padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.xl),
@@ -314,36 +362,50 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
                   ),
                 ),
 
-                // Grey rounded layer — reservation
+                // Reservering / eigenaar sectie
                 _TopRoundedContainer(
                   color: const Color(0xFFF6F7F9),
-                  child: device.isAvailable
-                      ? _ReservationSection(
-                          startDate: _startDate,
-                          endDate: _endDate,
-                          days: _days,
-                          total: _total,
-                          fmt: _fmt,
-                          onPickStart: () => _pickDate(true),
-                          onPickEnd: _startDate != null
-                              ? () => _pickDate(false)
-                              : null,
-                        )
-                      : const Padding(
+                  child: isOwner
+                      ? const Padding(
                           padding: EdgeInsets.all(AppSpacing.xl),
-                          child: Text(
-                            'Dit toestel is momenteel niet beschikbaar voor reservering.',
-                            style: AppTypography.body2,
-                            textAlign: TextAlign.center,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.home_outlined,
+                                  color: AppColors.textLight),
+                              SizedBox(width: AppSpacing.sm),
+                              Text(
+                                'Dit is jouw toestel',
+                                style: AppTypography.body2,
+                              ),
+                            ],
                           ),
-                        ),
+                        )
+                      : !device.isAvailable
+                          ? const Padding(
+                              padding: EdgeInsets.all(AppSpacing.xl),
+                              child: Text(
+                                'Dit toestel is momenteel niet beschikbaar voor reservering.',
+                                style: AppTypography.body2,
+                                textAlign: TextAlign.center,
+                              ),
+                            )
+                          : _ReservationSection(
+                              startDate: _startDate,
+                              endDate: _endDate,
+                              days: _days,
+                              total: _total,
+                              fmt: _fmt,
+                              onPickStart: () => _pickDate(true),
+                              onPickEnd: _startDate != null
+                                  ? () => _pickDate(false)
+                                  : null,
+                            ),
                 ),
               ],
             ),
           ),
-
-          // Extra space so content clears the sticky bottom bar
-          const SizedBox(height: 100),
+          const SizedBox(height: 120),
         ],
       ),
       bottomNavigationBar: _TopRoundedContainer(
@@ -352,36 +414,74 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
           child: Padding(
             padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.xl, vertical: AppSpacing.md),
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                elevation: 0,
-                backgroundColor: canReserve
-                    ? const Color(0xFFFF7643)
-                    : Colors.grey[300],
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 48),
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(16)),
-                ),
-              ),
-              onPressed: canReserve && !loading ? _reserve : null,
-              child: loading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2),
-                    )
-                  : Text(
-                      device.isAvailable
-                          ? (canReserve ? 'Reserveer' : 'Kies datums')
-                          : 'Niet beschikbaar',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: canReserve ? Colors.white : Colors.grey[500],
+            child: isOwner
+                ? const SizedBox.shrink()
+                : Row(
+                    children: [
+                      // Contact knop
+                      OutlinedButton.icon(
+                        onPressed: _contactLoading ? null : _contactOwner,
+                        icon: _contactLoading
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.chat_outlined, size: 18),
+                        label: const Text('Contact'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                              vertical: AppSpacing.md),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
                       ),
-                    ),
-            ),
+                      const SizedBox(width: AppSpacing.md),
+                      // Reserveer knop
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            elevation: 0,
+                            backgroundColor: canReserve
+                                ? const Color(0xFFFF7643)
+                                : Colors.grey[300],
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(double.infinity, 48),
+                            shape: const RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(16)),
+                            ),
+                          ),
+                          onPressed:
+                              canReserve && !reservationLoading ? _reserve : null,
+                          child: reservationLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                      color: Colors.white, strokeWidth: 2),
+                                )
+                              : Text(
+                                  device.isAvailable
+                                      ? (canReserve
+                                          ? 'Reserveer'
+                                          : 'Kies datums')
+                                      : 'Niet beschikbaar',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: canReserve
+                                        ? Colors.white
+                                        : Colors.grey[500],
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
           ),
         ),
       ),
@@ -389,7 +489,7 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
   }
 }
 
-// ── Shared layout widgets ─────────────────────────────────────────────────────
+// ── Gedeelde layout widgets ───────────────────────────────────────────────────
 
 class _TopRoundedContainer extends StatelessWidget {
   final Color color;
@@ -433,6 +533,21 @@ class _DeviceImageState extends State<_DeviceImage> {
     super.dispose();
   }
 
+  Widget _buildImageItem(String url) {
+    if (url.startsWith('http')) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stack) => _placeholder(),
+      );
+    }
+    try {
+      return Image.memory(base64Decode(url), fit: BoxFit.cover);
+    } catch (_) {
+      return _placeholder();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final images = widget.device.imageUrls;
@@ -456,16 +571,8 @@ class _DeviceImageState extends State<_DeviceImage> {
             controller: _pageController,
             itemCount: images.length,
             onPageChanged: (i) => setState(() => _currentPage = i),
-            itemBuilder: (context, i) {
-              try {
-                final bytes = base64Decode(images[i]);
-                return Image.memory(bytes, fit: BoxFit.cover);
-              } catch (_) {
-                return _placeholder();
-              }
-            },
+            itemBuilder: (context, i) => _buildImageItem(images[i]),
           ),
-          // Dot indicator
           if (images.length > 1)
             Positioned(
               bottom: 16,
@@ -490,7 +597,6 @@ class _DeviceImageState extends State<_DeviceImage> {
                 ),
               ),
             ),
-          // Image counter badge
           Positioned(
             top: topPadding - 8,
             right: 16,
@@ -523,7 +629,7 @@ class _DeviceImageState extends State<_DeviceImage> {
   }
 }
 
-// ── Reservation section ───────────────────────────────────────────────────────
+// ── Reserveringssectie ────────────────────────────────────────────────────────
 
 class _ReservationSection extends StatelessWidget {
   final DateTime? startDate;
@@ -635,8 +741,7 @@ class _DateBox extends StatelessWidget {
           children: [
             Text(
               label,
-              style: const TextStyle(
-                  fontSize: 11, color: AppColors.textLight),
+              style: const TextStyle(fontSize: 11, color: AppColors.textLight),
             ),
             const SizedBox(height: 2),
             Text(

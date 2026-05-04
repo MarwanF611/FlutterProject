@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../models/device.dart';
@@ -7,27 +6,25 @@ import '../services/storage_service.dart';
 
 class DeviceProvider extends ChangeNotifier {
   final FirestoreService _fs;
+  final StorageService _ss;
 
   String? _selectedCategory;
   bool _loading = false;
   String? _error;
 
-  DeviceProvider(this._fs, StorageService ss);
+  DeviceProvider(this._fs, this._ss);
 
   String? get selectedCategory => _selectedCategory;
   bool get loading => _loading;
   String? get error => _error;
 
   Stream<List<Device>> get devicesStream {
-    if (_selectedCategory == null) {
-      return _fs.getAvailableDevices();
-    }
+    if (_selectedCategory == null) return _fs.getAvailableDevices();
     return _fs.getDevicesByCategory(_selectedCategory!);
   }
 
-  Stream<List<Device>> ownerDevicesStream(String ownerUid) {
-    return _fs.getDevicesByOwner(ownerUid);
-  }
+  Stream<List<Device>> ownerDevicesStream(String ownerUid) =>
+      _fs.getDevicesByOwner(ownerUid);
 
   void selectCategory(String? category) {
     _selectedCategory = category;
@@ -43,10 +40,12 @@ class DeviceProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      // Convert each image to base64
-      final imageUrls = imageBytesList
-          .map((bytes) => base64Encode(bytes))
-          .toList();
+      // Upload images to Firebase Storage, store URLs in Firestore
+      final imageUrls = await Future.wait(
+        imageBytesList.map(
+          (bytes) => _ss.uploadDeviceImage(uid: ownerUid, imageBytes: bytes),
+        ),
+      );
 
       final deviceWithImages = Device(
         id: device.id,

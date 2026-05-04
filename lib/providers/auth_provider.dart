@@ -73,6 +73,47 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> updateProfile({String? displayName, String? city}) async {
+    if (_appUser == null) return false;
+    _loading = true;
+    notifyListeners();
+    try {
+      final updated = AppUser(
+        uid: _appUser!.uid,
+        email: _appUser!.email,
+        displayName: displayName ?? _appUser!.displayName,
+        city: city ?? _appUser!.city,
+        createdAt: _appUser!.createdAt,
+      );
+      await _authService.updateAppUser(updated);
+      _appUser = updated;
+      _loading = false;
+      notifyListeners();
+      return true;
+    } catch (_) {
+      _loading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> changePassword(String newPassword) async {
+    _loading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      await _authService.changePassword(newPassword);
+      _loading = false;
+      notifyListeners();
+      return true;
+    } on FirebaseAuthException catch (e) {
+      _error = _translateError(e.code);
+      _loading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<void> logout() async {
     await _authService.signOut();
   }
@@ -96,6 +137,8 @@ class AuthProvider extends ChangeNotifier {
         return 'Ongeldig e-mailadres.';
       case 'too-many-requests':
         return 'Te veel pogingen. Probeer later opnieuw.';
+      case 'requires-recent-login':
+        return 'Log opnieuw in om je wachtwoord te wijzigen.';
       default:
         return 'Er is een fout opgetreden. Probeer opnieuw.';
     }

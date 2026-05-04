@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../constants/app_constants.dart';
 import '../providers/auth_provider.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -14,7 +15,7 @@ class ProfileScreen extends StatelessWidget {
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Profiel'),
-        backgroundColor: const Color(0xFF1976D2),
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         automaticallyImplyLeading: false,
       ),
@@ -30,7 +31,7 @@ class ProfileScreen extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         radius: 30,
-                        backgroundColor: const Color(0xFFE3F2FD),
+                        backgroundColor: AppColors.primary.withValues(alpha: 0.12),
                         child: Text(
                           appUser.displayName.isNotEmpty
                               ? appUser.displayName[0].toUpperCase()
@@ -38,7 +39,7 @@ class ProfileScreen extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF1976D2),
+                            color: AppColors.primary,
                           ),
                         ),
                       ),
@@ -56,13 +57,11 @@ class ProfileScreen extends StatelessWidget {
                             ),
                             Text(
                               appUser.email,
-                              style: TextStyle(
-                                  color: Colors.grey[600], fontSize: 13),
+                              style: TextStyle(color: Colors.grey[600], fontSize: 13),
                             ),
                             Text(
                               appUser.city,
-                              style: TextStyle(
-                                  color: Colors.grey[600], fontSize: 13),
+                              style: TextStyle(color: Colors.grey[600], fontSize: 13),
                             ),
                           ],
                         ),
@@ -81,20 +80,20 @@ class ProfileScreen extends StatelessWidget {
                 _ProfileMenuItem(
                   icon: Icons.person_outline,
                   title: 'Profielinformatie',
-                  subtitle: 'Wijzig je accountgegevens',
-                  onTap: () {},
+                  subtitle: 'Wijzig je naam',
+                  onTap: () => _showEditNameDialog(context, auth),
                 ),
                 _ProfileMenuItem(
                   icon: Icons.lock_outline,
                   title: 'Wachtwoord wijzigen',
                   subtitle: 'Verander je wachtwoord',
-                  onTap: () {},
+                  onTap: () => _showChangePasswordDialog(context, auth),
                 ),
                 _ProfileMenuItem(
                   icon: Icons.location_on_outlined,
                   title: 'Locatie',
-                  subtitle: 'Beheer je stad/gemeente',
-                  onTap: () {},
+                  subtitle: 'Wijzig je stad/gemeente',
+                  onTap: () => _showEditCityDialog(context, auth),
                 ),
                 _ProfileMenuItem(
                   icon: Icons.info_outline,
@@ -121,6 +120,142 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _showEditNameDialog(BuildContext context, AuthProvider auth) {
+    final ctrl = TextEditingController(text: auth.appUser?.displayName ?? '');
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Naam wijzigen'),
+        content: TextField(
+          controller: ctrl,
+          decoration: const InputDecoration(labelText: 'Volledige naam'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuleren'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final name = ctrl.text.trim();
+              if (name.isEmpty) return;
+              Navigator.pop(ctx);
+              final ok = await auth.updateProfile(displayName: name);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(ok ? 'Naam bijgewerkt!' : 'Bijwerken mislukt.'),
+                    backgroundColor: ok ? Colors.green : Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text('Opslaan'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditCityDialog(BuildContext context, AuthProvider auth) {
+    final ctrl = TextEditingController(text: auth.appUser?.city ?? '');
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Stad wijzigen'),
+        content: TextField(
+          controller: ctrl,
+          decoration: const InputDecoration(labelText: 'Stad / gemeente'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuleren'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final city = ctrl.text.trim();
+              if (city.isEmpty) return;
+              Navigator.pop(ctx);
+              final ok = await auth.updateProfile(city: city);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(ok ? 'Stad bijgewerkt!' : 'Bijwerken mislukt.'),
+                    backgroundColor: ok ? Colors.green : Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text('Opslaan'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showChangePasswordDialog(BuildContext context, AuthProvider auth) {
+    final ctrl = TextEditingController();
+    final confirmCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Wachtwoord wijzigen'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: ctrl,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: 'Nieuw wachtwoord'),
+                validator: (v) =>
+                    (v == null || v.length < 6) ? 'Minimaal 6 tekens' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: confirmCtrl,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: 'Bevestig wachtwoord'),
+                validator: (v) =>
+                    v != ctrl.text ? 'Wachtwoorden komen niet overeen' : null,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuleren'),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              Navigator.pop(ctx);
+              final ok = await auth.changePassword(ctrl.text);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(ok
+                        ? 'Wachtwoord gewijzigd!'
+                        : auth.error ?? 'Wijzigen mislukt.'),
+                    backgroundColor: ok ? Colors.green : Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text('Opslaan'),
+          ),
+        ],
       ),
     );
   }

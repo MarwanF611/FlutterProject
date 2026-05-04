@@ -7,13 +7,10 @@ class ChatProvider extends ChangeNotifier {
 
   ChatProvider(this._fs);
 
-  Stream<List<Chat>> userChats(String uid) {
-    return _fs.getUserChats(uid);
-  }
+  Stream<List<Chat>> userChats(String uid) => _fs.getUserChats(uid);
 
-  Stream<List<ChatMessage>> chatMessages(String chatId) {
-    return _fs.getChatMessages(chatId);
-  }
+  Stream<List<ChatMessage>> chatMessages(String chatId) =>
+      _fs.getChatMessages(chatId);
 
   Future<void> sendMessage(String chatId, String senderId, String text) async {
     final msg = ChatMessage(
@@ -23,5 +20,23 @@ class ChatProvider extends ChangeNotifier {
       createdAt: DateTime.now(),
     );
     await _fs.sendMessage(chatId, msg);
+  }
+
+  Future<String> getOrCreateChat({
+    required String tenantUid,
+    required String ownerUid,
+    required String tenantName,
+    required String ownerName,
+    required String deviceId,
+    required String deviceTitle,
+  }) {
+    return _fs.getOrCreateChat(
+      tenantUid: tenantUid,
+      ownerUid: ownerUid,
+      tenantName: tenantName,
+      ownerName: ownerName,
+      deviceId: deviceId,
+      deviceTitle: deviceTitle,
+    );
   }
 }

@@ -514,6 +514,29 @@ class _DeviceProductCard extends StatefulWidget {
 class _DeviceProductCardState extends State<_DeviceProductCard> {
   bool _isFav = false;
 
+  Widget _buildImage(String url) {
+    if (url.startsWith('http')) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (context, error, stack) =>
+            const Icon(Icons.devices, color: AppColors.textLight, size: 40),
+      );
+    }
+    try {
+      return Image.memory(
+        base64Decode(url),
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      );
+    } catch (_) {
+      return const Icon(Icons.devices, color: AppColors.textLight, size: 40);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -530,27 +553,11 @@ class _DeviceProductCardState extends State<_DeviceProductCard> {
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: widget.device.imageUrls.isNotEmpty
-                  ? Builder(builder: (context) {
-                      try {
-                        return ClipRRect(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                          child: Image.memory(
-                            base64Decode(widget.device.imageUrls.first),
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
-                          ),
-                        );
-                      } catch (_) {
-                        return const Icon(Icons.devices,
-                            color: AppColors.textLight, size: 40);
-                      }
-                    })
-                  : const Icon(
-                      Icons.devices,
-                      color: AppColors.textLight,
-                      size: 40,
-                    ),
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      child: _buildImage(widget.device.imageUrls.first),
+                    )
+                  : const Icon(Icons.devices, color: AppColors.textLight, size: 40),
             ),
           ),
           const SizedBox(height: AppSpacing.sm),

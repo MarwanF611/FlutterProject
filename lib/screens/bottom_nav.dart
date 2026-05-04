@@ -18,19 +18,19 @@ class BottomNavScreen extends StatefulWidget {
 class _BottomNavScreenState extends State<BottomNavScreen> {
   int _currentIndex = 0;
 
+  static const _pages = [
+    HomeScreen(),
+    MyDevicesScreen(),
+    ReservationsTabScreen(),
+    MapScreen(),
+    ChatsScreen(),
+    ProfileScreen(),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final pages = [
-      const HomeScreen(),
-      const MyDevicesScreen(),
-      const ReservationsTabScreen(),
-      const MapScreen(),
-      const ChatsScreen(),
-      const ProfileScreen(),
-    ];
-
     return Scaffold(
-      body: pages[_currentIndex],
+      body: IndexedStack(index: _currentIndex, children: _pages),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (i) => setState(() => _currentIndex = i),

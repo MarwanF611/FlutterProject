@@ -22,46 +22,49 @@ class HomeScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header with Search and Icons
+              // Header met zoekbalk
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                child: _buildHeader(context),
+                child: _SearchField(),
               ),
               const SizedBox(height: AppSpacing.lg),
 
-              
-
-              // Categories Section
+              // Categorieën
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                    child: _buildSectionTitle('Alle Categorieën', onPressed: () {}),
+                    child: _buildSectionTitle(context, 'Alle Categorieën', onPressed: () {}),
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                    child: CategoryChipRow(
-                      selectedCategory: deviceProvider.selectedCategory,
-                      onSelected: deviceProvider.selectCategory,
-                    ),
+                  // Geen extra Padding hier – CategoryChipRow heeft eigen interne padding
+                  CategoryChipRow(
+                    selectedCategory: deviceProvider.selectedCategory,
+                    onSelected: deviceProvider.selectCategory,
                   ),
                 ],
               ),
               const SizedBox(height: AppSpacing.xl),
 
-              // Popular/Available Devices
+              // Beschikbare Toestellen
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                    child: _buildSectionTitle('Beschikbare Toestellen', onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (_) => const AllDevicesScreen(title: 'Alle Toestellen'),
-                      ));
-                    }),
+                    child: _buildSectionTitle(
+                      context,
+                      'Beschikbare Toestellen',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AllDevicesScreen(title: 'Alle Toestellen'),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   StreamBuilder<List<Device>>(
@@ -98,29 +101,26 @@ class HomeScreen extends StatelessWidget {
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                         child: Row(
-                          children: List.generate(
-                            devices.length,
-                            (index) {
-                              final device = devices[index];
-                              return Padding(
-                                padding: EdgeInsets.only(
-                                  right: index != devices.length - 1 ? AppSpacing.md : 0,
-                                ),
-                                child: SizedBox(
-                                  width: 160,
-                                  child: DeviceCard(
-                                    device: device,
-                                    onTap: () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => DeviceDetailScreen(device: device),
-                                      ),
+                          children: List.generate(devices.length, (index) {
+                            final device = devices[index];
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                right: index != devices.length - 1 ? AppSpacing.md : 0,
+                              ),
+                              child: SizedBox(
+                                width: 160,
+                                child: DeviceCard(
+                                  device: device,
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => DeviceDetailScreen(device: device),
                                     ),
                                   ),
                                 ),
-                              );
-                            },
-                          ),
+                              ),
+                            );
+                          }),
                         ),
                       );
                     },
@@ -129,17 +129,27 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.xl),
 
-              // Recently Added Section
+              // Recent Toegevoegd
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                    child: _buildSectionTitle('Recent Toegevoegd', onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (_) => const AllDevicesScreen(title: 'Recent Toegevoegd', recentOnly: true),
-                      ));
-                    }),
+                    child: _buildSectionTitle(
+                      context,
+                      'Recent Toegevoegd',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AllDevicesScreen(
+                              title: 'Recent Toegevoegd',
+                              recentOnly: true,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   StreamBuilder<List<Device>>(
@@ -195,30 +205,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: _SearchField(),
-        ),
-        const SizedBox(width: AppSpacing.md),
-        _IconButton(
-          icon: Icons.shopping_cart_outlined,
-          onPressed: () {},
-          badge: null,
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        _IconButton(
-          icon: Icons.notifications_outlined,
-          onPressed: () {},
-          badge: 3,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSectionTitle(String title, {required VoidCallback onPressed}) {
+  Widget _buildSectionTitle(BuildContext context, String title, {required VoidCallback onPressed}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -233,95 +220,41 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
+// Zoekbalk — tikt opent AllDevicesScreen met volledige zoek-/filteropties
 class _SearchField extends StatelessWidget {
   const _SearchField();
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      onChanged: (value) {},
-      decoration: InputDecoration(
-        filled: true,
-        hintStyle: const TextStyle(color: AppColors.textLight),
-        fillColor: AppColors.primaryDark.withValues(alpha: 0.08),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const AllDevicesScreen(title: 'Alle Toestellen'),
         ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: const BorderSide(color: AppColors.primary),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: BorderSide.none,
-        ),
-        hintText: 'Zoeken',
-        prefixIcon: const Icon(Icons.search, color: AppColors.textLight),
       ),
-    );
-  }
-}
-
-class _IconButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onPressed;
-  final int? badge;
-
-  const _IconButton({
-    required this.icon,
-    required this.onPressed,
-    this.badge,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(AppRadius.circle),
-      onTap: onPressed,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            height: 46,
-            width: 46,
-            decoration: BoxDecoration(
-              color: AppColors.primaryDark.withValues(alpha: 0.08),
-              shape: BoxShape.circle,
+      child: AbsorbPointer(
+        child: TextField(
+          decoration: InputDecoration(
+            filled: true,
+            hintStyle: const TextStyle(color: AppColors.textLight),
+            fillColor: AppColors.primaryDark.withValues(alpha: 0.08),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
             ),
-            child: Icon(icon, color: AppColors.textMedium),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              borderSide: BorderSide.none,
+            ),
+            hintText: 'Zoeken op naam, categorie of stad...',
+            prefixIcon: const Icon(Icons.search, color: AppColors.textLight),
           ),
-          if (badge != null)
-            Positioned(
-              top: -3,
-              right: 0,
-              child: Container(
-                height: 20,
-                width: 20,
-                decoration: BoxDecoration(
-                  color: AppColors.accentRed,
-                  shape: BoxShape.circle,
-                  border: Border.all(width: 1.5, color: Colors.white),
-                ),
-                child: Center(
-                  child: Text(
-                    '$badge',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      height: 1,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }

@@ -42,4 +42,12 @@ class AuthService {
     if (!doc.exists) return null;
     return AppUser.fromMap(uid, doc.data()!);
   }
+
+  Future<void> updateAppUser(AppUser user) {
+    return _db.collection('users').doc(user.uid).update(user.toMap());
+  }
+
+  Future<void> changePassword(String newPassword) async {
+    await _auth.currentUser!.updatePassword(newPassword);
+  }
 }
