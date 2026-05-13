@@ -3,6 +3,7 @@ import '../models/app_user.dart';
 import '../models/device.dart';
 import '../models/reservation.dart';
 import '../models/chat.dart';
+import '../models/comment.dart';
 import '../models/review.dart';
 
 class FirestoreService {
@@ -199,6 +200,28 @@ class FirestoreService {
     );
     final ref = await _db.collection('chats').add(newChat.toMap());
     return ref.id;
+  }
+
+  // --- Comments ---
+
+  Stream<List<Comment>> getComments(String deviceId) {
+    return _db
+        .collection('devices')
+        .doc(deviceId)
+        .collection('comments')
+        .orderBy('createdAt', descending: false)
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((doc) => Comment.fromMap(doc.id, doc.data()))
+            .toList());
+  }
+
+  Future<void> addComment(Comment comment) {
+    return _db
+        .collection('devices')
+        .doc(comment.deviceId)
+        .collection('comments')
+        .add(comment.toMap());
   }
 
   // --- Reviews ---

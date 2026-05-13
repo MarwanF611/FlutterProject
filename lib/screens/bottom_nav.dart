@@ -54,34 +54,13 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
   }
 
   Widget _badgeIcon(int count, {required IconData icon}) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Icon(icon),
-        if (count > 0)
-          Positioned(
-            top: -6,
-            right: -8,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.red,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
-              child: Text(
-                count > 99 ? '99+' : '$count',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  height: 1.2,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-      ],
+    if (count == 0) return Icon(icon);
+    return Badge.count(
+      count: count,
+      backgroundColor: Colors.red,
+      textColor: Colors.white,
+      textStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+      child: Icon(icon),
     );
   }
 
