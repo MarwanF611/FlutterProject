@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../constants/app_constants.dart';
 import '../providers/chat_provider.dart';
 import '../providers/reservation_provider.dart';
+import '../services/notification_service.dart';
 import 'homepage.dart';
 import 'map_screen.dart';
 import 'my_devices.dart';
@@ -20,6 +21,15 @@ class BottomNavScreen extends StatefulWidget {
 
 class _BottomNavScreenState extends State<BottomNavScreen> {
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Request notification permission now that the UI is fully visible.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      NotificationService.requestPermissions();
+    });
+  }
 
   static const int _reservationTabIndex = 2;
   static const int _chatTabIndex = 4;
