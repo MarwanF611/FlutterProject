@@ -18,9 +18,18 @@ class NotificationService {
   /// Only sets up the plugin and channel — does NOT request permission yet
   /// (the Activity is not visible yet at that point).
   static Future<void> initialize() async {
+    // Android + iOS local notifications setup
     const androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
-    const initSettings = InitializationSettings(android: androidSettings);
+    const iosSettings = DarwinInitializationSettings(
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
+    );
+    const initSettings = InitializationSettings(
+      android: androidSettings,
+      iOS: iosSettings,
+    );
     await _plugin.initialize(initSettings);
 
     // Create high-importance notification channel (Android 8+)
