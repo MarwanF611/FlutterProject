@@ -5,6 +5,7 @@ import '../models/reservation.dart';
 import '../providers/auth_provider.dart';
 import '../providers/reservation_provider.dart';
 import '../widgets/reservation_tile.dart';
+import '../widgets/review_sheet.dart';
 
 class ReservationRequestsScreen extends StatelessWidget {
   const ReservationRequestsScreen({super.key});
@@ -36,11 +37,7 @@ class ReservationRequestsScreen extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.inbox_outlined,
-                      size: 64,
-                      color: Colors.grey[400],
-                    ),
+                    Icon(Icons.inbox_outlined, size: 64, color: Colors.grey[400]),
                     const SizedBox(height: 16),
                     Text(
                       'Geen binnenkomende aanvragen',
@@ -64,18 +61,29 @@ class ReservationRequestsScreen extends StatelessWidget {
           itemCount: reservations.length,
           itemBuilder: (context, index) {
             final res = reservations[index];
+            final appUser = context.read<AuthProvider>().appUser;
             return ReservationTile(
               reservation: res,
               onApprove: res.status == 'pending'
                   ? () => context
-                        .read<ReservationProvider>()
-                        .approveReservation(res.id, res.deviceId)
+                      .read<ReservationProvider>()
+                      .approveReservation(res.id, res.deviceId)
                   : null,
               onReject: res.status == 'pending'
-                  ? () => context.read<ReservationProvider>().rejectReservation(
-                      res.id,
-                      res.deviceId,
-                    )
+                  ? () => context
+                      .read<ReservationProvider>()
+                      .rejectReservation(res.id, res.deviceId)
+                  : null,
+              onReview: (res.status == 'approved' || res.status == 'completed') &&
+                      appUser != null
+                  ? () => showReviewSheet(
+                        context,
+                        reservation: res,
+                        reviewerId: appUser.uid,
+                        reviewerName: appUser.displayName,
+                        // Owner reviews the tenant
+                        revieweeId: res.tenantUid,
+                      )
                   : null,
             );
           },

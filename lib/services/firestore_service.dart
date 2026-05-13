@@ -3,6 +3,8 @@ import '../models/app_user.dart';
 import '../models/device.dart';
 import '../models/reservation.dart';
 import '../models/chat.dart';
+import '../models/comment.dart';
+import '../models/review.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -198,6 +200,69 @@ class FirestoreService {
     );
     final ref = await _db.collection('chats').add(newChat.toMap());
     return ref.id;
+  }
+
+  // --- Comments ---
+
+  Stream<List<Comment>> getComments(String deviceId) {
+    return _db
+        .collection('devices')
+        .doc(deviceId)
+        .collection('comments')
+        .orderBy('createdAt', descending: false)
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((doc) => Comment.fromMap(doc.id, doc.data()))
+            .toList());
+  }
+
+  Future<void> addComment(Comment comment) {
+    return _db
+        .collection('devices')
+        .doc(comment.deviceId)
+        .collection('comments')
+        .add(comment.toMap());
+  }
+
+  // --- Reviews ---
+
+  /// Doc-ID = reservationId_reviewerId, so duplicate reviews are overwritten.
+  Future<void> addReview(Review review) {
+    final docId = '${review.reservationId}_${review.reviewerId}';
+    return _db.collection('reviews').doc(docId).set(review.toMap());
+  }
+
+  Stream<List<Review>> getReviewsForUser(String uid) {
+    return _db
+        .collection('reviews')
+        .where('revieweeId', isEqualTo: uid)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((doc) => Review.fromMap(doc.id, doc.data()))
+            .toList());
+  }
+
+  Future<bool> hasReviewed(String reservationId, String reviewerId) async {
+    final doc = await _db
+        .collection('reviews')
+        .doc('${reservationId}_$reviewerId')
+        .get();
+    return doc.exists;
+  }
+
+  // --- Reminders ---
+
+  Future<List<Reservation>> getApprovedReservationsForTenant(
+      String tenantUid) async {
+    final snap = await _db
+        .collection('reservations')
+        .where('tenantUid', isEqualTo: tenantUid)
+        .where('status', isEqualTo: 'approved')
+        .get();
+    return snap.docs
+        .map((doc) => Reservation.fromMap(doc.id, doc.data()))
+        .toList();
   }
 
   // --- Users ---

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/chat.dart';
 import '../services/firestore_service.dart';
+import '../services/in_app_notification.dart';
 import '../services/notification_service.dart';
 
 class ChatProvider extends ChangeNotifier {
@@ -10,6 +11,15 @@ class ChatProvider extends ChangeNotifier {
   StreamSubscription? _chatListSub;
   final Map<String, StreamSubscription> _chatMsgSubs = {};
   final Map<String, String> _lastKnownMsgId = {};
+  int _unreadCount = 0;
+
+  int get unreadCount => _unreadCount;
+
+  void clearUnread() {
+    if (_unreadCount == 0) return;
+    _unreadCount = 0;
+    notifyListeners();
+  }
 
   ChatProvider(this._fs);
 
@@ -86,8 +96,18 @@ class ChatProvider extends ChangeNotifier {
 
           if (!alreadySeen && latest.senderId != currentUserId) {
             _lastKnownMsgId[chat.id] = latest.id;
+            _unreadCount++;
+            notifyListeners();
             final sender =
                 chat.participantNames[latest.senderId] ?? 'Onbekend';
+            // In-app banner (always visible, no permission needed)
+            InAppNotificationService.show(
+              title: sender,
+              body: latest.text,
+              icon: Icons.chat_bubble_rounded,
+              color: const Color(0xFF1976D2),
+            );
+            // System notification (when app is in background)
             NotificationService.showMessageNotification(
               id: chat.id.hashCode,
               senderName: sender,
@@ -107,6 +127,7 @@ class ChatProvider extends ChangeNotifier {
     }
     _chatMsgSubs.clear();
     _lastKnownMsgId.clear();
+    _unreadCount = 0;
   }
 
   @override

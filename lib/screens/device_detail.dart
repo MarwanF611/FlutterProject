@@ -5,11 +5,13 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../constants/app_constants.dart';
 import '../models/chat.dart';
+import '../models/comment.dart';
 import '../models/device.dart';
 import '../models/reservation.dart';
 import '../providers/auth_provider.dart';
 import '../providers/chat_provider.dart';
 import '../providers/reservation_provider.dart';
+import '../services/firestore_service.dart';
 import 'chat_detail_screen.dart';
 
 const _heartSvg =
@@ -201,11 +203,6 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
     final auth = context.watch<AuthProvider>();
     final reservationLoading = context.watch<ReservationProvider>().loading;
     final isOwner = auth.user?.uid == device.ownerUid;
-    final canReserve = !isOwner &&
-        device.isAvailable &&
-        _startDate != null &&
-        _endDate != null &&
-        !_hasConflict();
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -461,6 +458,8 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
               ],
             ),
           ),
+          // Commentaren sectie
+          _CommentsSection(device: widget.device),
           const SizedBox(height: 120),
         ],
       ),
@@ -502,9 +501,9 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             elevation: 0,
-                            backgroundColor: canReserve
-                                ? const Color(0xFFFF7643)
-                                : Colors.grey[300],
+                            backgroundColor: !device.isAvailable || _hasConflict()
+                                ? Colors.grey[300]
+                                : const Color(0xFFFF7643),
                             foregroundColor: Colors.white,
                             minimumSize: const Size(double.infinity, 48),
                             shape: const RoundedRectangleBorder(
@@ -512,8 +511,15 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
                                   BorderRadius.all(Radius.circular(16)),
                             ),
                           ),
-                          onPressed:
-                              canReserve && !reservationLoading ? _reserve : null,
+                          onPressed: !device.isAvailable ||
+                                  reservationLoading ||
+                                  _hasConflict()
+                              ? null
+                              : _startDate == null
+                                  ? () => _pickDate(true)
+                                  : _endDate == null
+                                      ? () => _pickDate(false)
+                                      : _reserve,
                           child: reservationLoading
                               ? const SizedBox(
                                   width: 20,
@@ -531,9 +537,9 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
                                               : 'Reserveer',
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
-                                    color: canReserve
-                                        ? Colors.white
-                                        : Colors.grey[500],
+                                    color: !device.isAvailable || _hasConflict()
+                                        ? Colors.grey[500]
+                                        : Colors.white,
                                   ),
                                 ),
                         ),
@@ -821,6 +827,233 @@ class _ReservationSection extends StatelessWidget {
           ],
           const SizedBox(height: AppSpacing.sm),
         ],
+      ),
+    );
+  }
+}
+
+// ── Commentarensectie ─────────────────────────────────────────────────────────
+
+class _CommentsSection extends StatefulWidget {
+  final Device device;
+  const _CommentsSection({required this.device});
+
+  @override
+  State<_CommentsSection> createState() => _CommentsSectionState();
+}
+
+class _CommentsSectionState extends State<_CommentsSection> {
+  final _ctrl = TextEditingController();
+  bool _sending = false;
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit(String? userId, String? userName) async {
+    final text = _ctrl.text.trim();
+    if (text.isEmpty || userId == null || userName == null) return;
+    setState(() => _sending = true);
+    try {
+      await FirestoreService().addComment(
+        Comment(
+          id: '',
+          userId: userId,
+          userName: userName,
+          deviceId: widget.device.id,
+          text: text,
+          createdAt: DateTime.now(),
+        ),
+      );
+      _ctrl.clear();
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final appUser = context.watch<AuthProvider>().appUser;
+    final fmt = DateFormat('dd/MM/yy');
+
+    return _TopRoundedContainer(
+      color: const Color(0xFFF6F7F9),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xl, AppSpacing.lg, AppSpacing.xl, AppSpacing.xl),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '💬 Reacties',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: AppSpacing.md),
+
+            // Comment input
+            if (appUser != null) ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor:
+                        AppColors.primary.withValues(alpha: 0.12),
+                    child: Text(
+                      appUser.displayName.isNotEmpty
+                          ? appUser.displayName[0].toUpperCase()
+                          : '?',
+                      style: const TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: _ctrl,
+                      minLines: 1,
+                      maxLines: 4,
+                      textInputAction: TextInputAction.newline,
+                      decoration: InputDecoration(
+                        hintText: 'Schrijf een reactie…',
+                        hintStyle:
+                            const TextStyle(color: AppColors.textLight),
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 10),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _sending
+                      ? const SizedBox(
+                          width: 36,
+                          height: 36,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : IconButton.filled(
+                          style: IconButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                          ),
+                          icon: const Icon(Icons.send_rounded, size: 18),
+                          onPressed: () =>
+                              _submit(appUser.uid, appUser.displayName),
+                        ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
+            ] else ...[
+              Text(
+                'Log in om een reactie te plaatsen.',
+                style: TextStyle(color: Colors.grey[500], fontSize: 13),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+            ],
+
+            // Comment list
+            StreamBuilder<List<Comment>>(
+              stream:
+                  FirestoreService().getComments(widget.device.id),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final comments = snapshot.data ?? [];
+                if (comments.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding:
+                          const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                      child: Text(
+                        'Nog geen reacties. Wees de eerste!',
+                        style: TextStyle(
+                            color: Colors.grey[500], fontSize: 13),
+                      ),
+                    ),
+                  );
+                }
+                return ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: comments.length,
+                  separatorBuilder: (_, _) =>
+                      const SizedBox(height: AppSpacing.md),
+                  itemBuilder: (context, i) {
+                    final c = comments[i];
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundColor:
+                              AppColors.primary.withValues(alpha: 0.1),
+                          child: Text(
+                            c.userName.isNotEmpty
+                                ? c.userName[0].toUpperCase()
+                                : '?',
+                            style: const TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                  color: Colors.grey.shade200),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      c.userName,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13),
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      fmt.format(c.createdAt),
+                                      style: TextStyle(
+                                          color: Colors.grey[400],
+                                          fontSize: 11),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  c.text,
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
