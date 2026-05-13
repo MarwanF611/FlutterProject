@@ -458,6 +458,9 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
               ],
             ),
           ),
+          // Rating sectie
+          _RatingSection(device: widget.device),
+
           // Commentaren sectie
           _CommentsSection(device: widget.device),
           const SizedBox(height: 120),
@@ -828,6 +831,180 @@ class _ReservationSection extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
         ],
       ),
+    );
+  }
+}
+
+// ── Ratingsectie ──────────────────────────────────────────────────────────────
+
+class _RatingSection extends StatefulWidget {
+  final Device device;
+  const _RatingSection({required this.device});
+
+  @override
+  State<_RatingSection> createState() => _RatingSectionState();
+}
+
+class _RatingSectionState extends State<_RatingSection> {
+  int? _selectedRating;
+  bool _submitting = false;
+  bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserRating();
+  }
+
+  Future<void> _loadUserRating() async {
+    final uid = context.read<AuthProvider>().user?.uid;
+    if (uid == null) return;
+    final r = await FirestoreService()
+        .getUserDeviceRating(widget.device.id, uid);
+    if (mounted) setState(() { _selectedRating = r; _loaded = true; });
+  }
+
+  Future<void> _submit(int star) async {
+    final uid = context.read<AuthProvider>().user?.uid;
+    if (uid == null) return;
+    setState(() { _submitting = true; _selectedRating = star; });
+    try {
+      await FirestoreService().rateDevice(widget.device.id, uid, star);
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final device = widget.device;
+    final isOwner =
+        context.watch<AuthProvider>().user?.uid == device.ownerUid;
+
+    return _TopRoundedContainer(
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xl, AppSpacing.lg, AppSpacing.xl, AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Gemiddelde ──
+            Row(
+              children: [
+                const Text(
+                  '⭐ Beoordeling',
+                  style: TextStyle(
+                      fontSize: 17, fontWeight: FontWeight.w700),
+                ),
+                const Spacer(),
+                if (device.ratingCount > 0) ...[
+                  Icon(Icons.star_rounded,
+                      color: Colors.amber[600], size: 20),
+                  const SizedBox(width: 4),
+                  Text(
+                    device.avgRating.toStringAsFixed(1),
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
+                  Text(
+                    '  (${device.ratingCount} stem${device.ratingCount == 1 ? '' : 'men'})',
+                    style: TextStyle(
+                        fontSize: 13, color: Colors.grey[500]),
+                  ),
+                ] else
+                  Text('Nog geen beoordelingen',
+                      style: TextStyle(
+                          color: Colors.grey[400], fontSize: 13)),
+              ],
+            ),
+
+            if (device.ratingCount > 0) ...[
+              const SizedBox(height: 8),
+              _StarBar(rating: device.avgRating),
+            ],
+
+            // ── Eigen beoordeling ──
+            if (!isOwner) ...[
+              const SizedBox(height: AppSpacing.lg),
+              Text(
+                _loaded && _selectedRating != null
+                    ? 'Jouw beoordeling'
+                    : 'Geef jouw beoordeling',
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[700]),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: List.generate(5, (i) {
+                  final star = i + 1;
+                  return GestureDetector(
+                    onTap: _submitting ? null : () => _submit(star),
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: _submitting && star == _selectedRating
+                          ? const SizedBox(
+                              width: 30,
+                              height: 30,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.amber),
+                            )
+                          : Icon(
+                              (_selectedRating != null &&
+                                      star <= _selectedRating!)
+                                  ? Icons.star_rounded
+                                  : Icons.star_outline_rounded,
+                              size: 34,
+                              color: (_selectedRating != null &&
+                                      star <= _selectedRating!)
+                                  ? Colors.amber
+                                  : Colors.grey[350],
+                            ),
+                    ),
+                  );
+                }),
+              ),
+              if (_loaded && _selectedRating != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    'Je hebt $_selectedRating ster${_selectedRating == 1 ? '' : 'ren'} gegeven. Tik om te wijzigen.',
+                    style: TextStyle(
+                        fontSize: 12, color: Colors.grey[500]),
+                  ),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Read-only filled star bar for the average.
+class _StarBar extends StatelessWidget {
+  final double rating;
+  const _StarBar({required this.rating});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (i) {
+        final fill = (rating - i).clamp(0.0, 1.0);
+        return Icon(
+          fill >= 0.75
+              ? Icons.star_rounded
+              : fill >= 0.25
+                  ? Icons.star_half_rounded
+                  : Icons.star_outline_rounded,
+          size: 20,
+          color: Colors.amber,
+        );
+      }),
     );
   }
 }

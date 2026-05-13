@@ -202,6 +202,49 @@ class FirestoreService {
     return ref.id;
   }
 
+  // --- Device ratings ---
+
+  /// Saves / updates [userId]'s rating for a device and recalculates the
+  /// aggregate avgRating + ratingCount on the device document.
+  Future<void> rateDevice(
+      String deviceId, String userId, int rating) async {
+    final ratingRef = _db
+        .collection('devices')
+        .doc(deviceId)
+        .collection('ratings')
+        .doc(userId);
+
+    await ratingRef.set({'rating': rating, 'userId': userId});
+
+    final snap = await _db
+        .collection('devices')
+        .doc(deviceId)
+        .collection('ratings')
+        .get();
+
+    final all =
+        snap.docs.map((d) => (d.data()['rating'] as num).toInt()).toList();
+    final avg = all.isEmpty
+        ? 0.0
+        : all.reduce((a, b) => a + b) / all.length;
+
+    await _db.collection('devices').doc(deviceId).update({
+      'avgRating': avg,
+      'ratingCount': all.length,
+    });
+  }
+
+  Future<int?> getUserDeviceRating(String deviceId, String userId) async {
+    final doc = await _db
+        .collection('devices')
+        .doc(deviceId)
+        .collection('ratings')
+        .doc(userId)
+        .get();
+    if (!doc.exists) return null;
+    return (doc.data()?['rating'] as num?)?.toInt();
+  }
+
   // --- Comments ---
 
   Stream<List<Comment>> getComments(String deviceId) {

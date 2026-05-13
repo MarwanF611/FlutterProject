@@ -39,6 +39,8 @@ class Device {
   final DateTime createdAt;
   final double? lat;
   final double? lng;
+  final double avgRating;
+  final int ratingCount;
 
   Device({
     required this.id,
@@ -54,6 +56,8 @@ class Device {
     required this.createdAt,
     this.lat,
     this.lng,
+    this.avgRating = 0.0,
+    this.ratingCount = 0,
   });
 
   factory Device.fromMap(String id, Map<String, dynamic> map) {
@@ -71,6 +75,8 @@ class Device {
       createdAt: (map['createdAt'] as Timestamp).toDate(),
       lat: (map['lat'] as num?)?.toDouble(),
       lng: (map['lng'] as num?)?.toDouble(),
+      avgRating: (map['avgRating'] as num?)?.toDouble() ?? 0.0,
+      ratingCount: (map['ratingCount'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -88,6 +94,8 @@ class Device {
       'createdAt': Timestamp.fromDate(createdAt),
       if (lat != null) 'lat': lat,
       if (lng != null) 'lng': lng,
+      'avgRating': avgRating,
+      'ratingCount': ratingCount,
     };
   }
 }

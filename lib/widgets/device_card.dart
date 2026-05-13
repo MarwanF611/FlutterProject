@@ -70,11 +70,34 @@ class DeviceCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          Text(
-            '${device.ownerName} • ${device.ownerCity}',
-            style: AppTypography.body3,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          Row(
+            children: [
+              if (device.ratingCount > 0) ...[
+                const Icon(Icons.star_rounded,
+                    size: 13, color: Colors.amber),
+                const SizedBox(width: 2),
+                Text(
+                  '${device.avgRating.toStringAsFixed(1)} (${device.ratingCount})',
+                  style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.amber),
+                ),
+                const SizedBox(width: 4),
+                Text('·',
+                    style: TextStyle(
+                        fontSize: 11, color: AppColors.textLight)),
+                const SizedBox(width: 4),
+              ],
+              Expanded(
+                child: Text(
+                  '${device.ownerName} • ${device.ownerCity}',
+                  style: AppTypography.body3,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
         ],
       ),
