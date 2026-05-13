@@ -81,17 +81,20 @@ class MyApp extends StatelessWidget {
           }
 
           final chatProvider = context.read<ChatProvider>();
+          final reservationProvider = context.read<ReservationProvider>();
 
           if (snapshot.hasData) {
-            // Start notification listener when user logs in
+            final uid = snapshot.data!.uid;
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              chatProvider.startMessageListener(snapshot.data!.uid);
+              chatProvider.startMessageListener(uid);
+              reservationProvider.startReservationListener(uid);
+              reservationProvider.checkUpcomingReminders(uid);
             });
             return const BottomNavScreen();
           } else {
-            // Stop listener when user logs out
             WidgetsBinding.instance.addPostFrameCallback((_) {
               chatProvider.stopMessageListener();
+              reservationProvider.stopReservationListener();
             });
             return const LoginScreen();
           }

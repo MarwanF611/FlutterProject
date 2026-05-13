@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../constants/app_constants.dart';
+import '../models/review.dart';
 import '../providers/auth_provider.dart';
+import '../services/firestore_service.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -69,6 +72,7 @@ class ProfileScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 24),
+                  _ReviewsSection(uid: appUser.uid),
                   const Divider(),
                   const SizedBox(height: 8),
                 ],
@@ -254,6 +258,140 @@ class ProfileScreen extends StatelessWidget {
               }
             },
             child: const Text('Opslaan'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReviewsSection extends StatelessWidget {
+  final String uid;
+  const _ReviewsSection({required this.uid});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<Review>>(
+      stream: FirestoreService().getReviewsForUser(uid),
+      builder: (context, snapshot) {
+        final reviews = snapshot.data ?? [];
+        final avg = reviews.isEmpty
+            ? 0.0
+            : reviews.map((r) => r.rating).reduce((a, b) => a + b) /
+                reviews.length;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Text(
+                  'Beoordelingen',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(width: 10),
+                if (reviews.isNotEmpty) ...[
+                  const Icon(Icons.star_rounded, color: Colors.amber, size: 18),
+                  const SizedBox(width: 3),
+                  Text(
+                    '${avg.toStringAsFixed(1)} (${reviews.length})',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600, fontSize: 14),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 10),
+            if (reviews.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Text(
+                  'Nog geen beoordelingen ontvangen.',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                ),
+              )
+            else
+              ...reviews.take(3).map((r) => _ReviewCard(review: r)),
+            const SizedBox(height: 8),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ReviewCard extends StatelessWidget {
+  final Review review;
+  const _ReviewCard({required this.review});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 14,
+                backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                child: Text(
+                  review.reviewerName.isNotEmpty
+                      ? review.reviewerName[0].toUpperCase()
+                      : '?',
+                  style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(review.reviewerName,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 13)),
+                    Text(
+                      review.deviceTitle,
+                      style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+              Row(
+                children: List.generate(
+                  5,
+                  (i) => Icon(
+                    i < review.rating
+                        ? Icons.star_rounded
+                        : Icons.star_outline_rounded,
+                    size: 14,
+                    color: Colors.amber,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (review.comment.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              review.comment,
+              style: TextStyle(color: Colors.grey[700], fontSize: 13),
+            ),
+          ],
+          const SizedBox(height: 4),
+          Text(
+            DateFormat('dd/MM/yyyy').format(review.createdAt),
+            style: TextStyle(color: Colors.grey[400], fontSize: 11),
           ),
         ],
       ),

@@ -201,11 +201,6 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
     final auth = context.watch<AuthProvider>();
     final reservationLoading = context.watch<ReservationProvider>().loading;
     final isOwner = auth.user?.uid == device.ownerUid;
-    final canReserve = !isOwner &&
-        device.isAvailable &&
-        _startDate != null &&
-        _endDate != null &&
-        !_hasConflict();
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -502,9 +497,9 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             elevation: 0,
-                            backgroundColor: canReserve
-                                ? const Color(0xFFFF7643)
-                                : Colors.grey[300],
+                            backgroundColor: !device.isAvailable || _hasConflict()
+                                ? Colors.grey[300]
+                                : const Color(0xFFFF7643),
                             foregroundColor: Colors.white,
                             minimumSize: const Size(double.infinity, 48),
                             shape: const RoundedRectangleBorder(
@@ -512,8 +507,15 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
                                   BorderRadius.all(Radius.circular(16)),
                             ),
                           ),
-                          onPressed:
-                              canReserve && !reservationLoading ? _reserve : null,
+                          onPressed: !device.isAvailable ||
+                                  reservationLoading ||
+                                  _hasConflict()
+                              ? null
+                              : _startDate == null
+                                  ? () => _pickDate(true)
+                                  : _endDate == null
+                                      ? () => _pickDate(false)
+                                      : _reserve,
                           child: reservationLoading
                               ? const SizedBox(
                                   width: 20,
@@ -531,9 +533,9 @@ class _DeviceDetailScreenState extends State<DeviceDetailScreen> {
                                               : 'Reserveer',
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
-                                    color: canReserve
-                                        ? Colors.white
-                                        : Colors.grey[500],
+                                    color: !device.isAvailable || _hasConflict()
+                                        ? Colors.grey[500]
+                                        : Colors.white,
                                   ),
                                 ),
                         ),

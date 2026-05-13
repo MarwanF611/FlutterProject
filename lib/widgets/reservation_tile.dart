@@ -7,12 +7,14 @@ class ReservationTile extends StatelessWidget {
   final Reservation reservation;
   final VoidCallback? onApprove;
   final VoidCallback? onReject;
+  final VoidCallback? onReview;
 
   const ReservationTile({
     super.key,
     required this.reservation,
     this.onApprove,
     this.onReject,
+    this.onReview,
   });
 
   @override
@@ -174,6 +176,26 @@ class ReservationTile extends StatelessWidget {
                         ),
                       ),
                     ],
+                  ),
+                ],
+                if ((reservation.status == 'approved' ||
+                        reservation.status == 'completed') &&
+                    onReview != null) ...[
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: onReview,
+                      icon: const Icon(Icons.star_outline, size: 16),
+                      label: const Text('Beoordelen'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.amber[700],
+                        side: BorderSide(color: Colors.amber[700]!),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ],

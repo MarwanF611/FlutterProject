@@ -10,6 +10,15 @@ class ChatProvider extends ChangeNotifier {
   StreamSubscription? _chatListSub;
   final Map<String, StreamSubscription> _chatMsgSubs = {};
   final Map<String, String> _lastKnownMsgId = {};
+  int _unreadCount = 0;
+
+  int get unreadCount => _unreadCount;
+
+  void clearUnread() {
+    if (_unreadCount == 0) return;
+    _unreadCount = 0;
+    notifyListeners();
+  }
 
   ChatProvider(this._fs);
 
@@ -86,6 +95,8 @@ class ChatProvider extends ChangeNotifier {
 
           if (!alreadySeen && latest.senderId != currentUserId) {
             _lastKnownMsgId[chat.id] = latest.id;
+            _unreadCount++;
+            notifyListeners();
             final sender =
                 chat.participantNames[latest.senderId] ?? 'Onbekend';
             NotificationService.showMessageNotification(
@@ -107,6 +118,7 @@ class ChatProvider extends ChangeNotifier {
     }
     _chatMsgSubs.clear();
     _lastKnownMsgId.clear();
+    _unreadCount = 0;
   }
 
   @override

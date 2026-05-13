@@ -5,6 +5,7 @@ import '../models/reservation.dart';
 import '../providers/auth_provider.dart';
 import '../providers/reservation_provider.dart';
 import '../widgets/reservation_tile.dart';
+import '../widgets/review_sheet.dart';
 
 class MyReservationsScreen extends StatelessWidget {
   const MyReservationsScreen({super.key});
@@ -36,11 +37,7 @@ class MyReservationsScreen extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.calendar_today,
-                      size: 64,
-                      color: Colors.grey[400],
-                    ),
+                    Icon(Icons.calendar_today, size: 64, color: Colors.grey[400]),
                     const SizedBox(height: 16),
                     Text(
                       'Je hebt nog geen reserveringen.',
@@ -62,8 +59,24 @@ class MyReservationsScreen extends StatelessWidget {
         return ListView.builder(
           padding: const EdgeInsets.symmetric(vertical: 12),
           itemCount: reservations.length,
-          itemBuilder: (context, index) =>
-              ReservationTile(reservation: reservations[index]),
+          itemBuilder: (context, index) {
+            final res = reservations[index];
+            final appUser = context.read<AuthProvider>().appUser;
+            return ReservationTile(
+              reservation: res,
+              onReview: (res.status == 'approved' || res.status == 'completed') &&
+                      appUser != null
+                  ? () => showReviewSheet(
+                        context,
+                        reservation: res,
+                        reviewerId: appUser.uid,
+                        reviewerName: appUser.displayName,
+                        // Tenant reviews the owner
+                        revieweeId: res.ownerUid,
+                      )
+                  : null,
+            );
+          },
         );
       },
     );
