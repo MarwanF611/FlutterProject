@@ -15,10 +15,18 @@ class NotificationService {
   static const _channelDesc = 'Notificaties voor nieuwe chatberichten';
 
   static Future<void> initialize() async {
-    // Android local notifications setup
+    // Android + iOS local notifications setup
     const androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
-    const initSettings = InitializationSettings(android: androidSettings);
+    const iosSettings = DarwinInitializationSettings(
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
+    );
+    const initSettings = InitializationSettings(
+      android: androidSettings,
+      iOS: iosSettings,
+    );
     await _plugin.initialize(initSettings);
 
     // Create high-importance notification channel
