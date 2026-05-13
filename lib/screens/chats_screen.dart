@@ -33,9 +33,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
     final uid = context.watch<AuthProvider>().appUser?.uid;
 
     if (uid == null) {
-      return const Scaffold(
-        body: Center(child: Text('Niet ingelogd.')),
-      );
+      return const Scaffold(body: Center(child: Text('Niet ingelogd.')));
     }
 
     return Scaffold(
@@ -49,9 +47,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
         stream: _chatsStream,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return Center(
-              child: Text('Fout: ${snapshot.error}'),
-            );
+            return Center(child: Text('Fout: ${snapshot.error}'));
           }
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -62,8 +58,11 @@ class _ChatsScreenState extends State<ChatsScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.chat_bubble_outline,
-                      size: 64, color: Colors.grey[400]),
+                  Icon(
+                    Icons.chat_bubble_outline,
+                    size: 64,
+                    color: Colors.grey[400],
+                  ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     'Je hebt nog geen gesprekken.',
@@ -75,76 +74,110 @@ class _ChatsScreenState extends State<ChatsScreen> {
           }
 
           return ListView.separated(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             itemCount: chats.length,
-            separatorBuilder: (context, index) => const Divider(height: 1),
+            separatorBuilder: (context, index) => const SizedBox(height: 10),
             itemBuilder: (context, index) {
               final chat = chats[index];
               final otherParticipantId = chat.participants.firstWhere(
-                  (id) => id != uid,
-                  orElse: () => chat.participants.first);
+                (id) => id != uid,
+                orElse: () => chat.participants.first,
+              );
               final otherParticipantName =
                   chat.participantNames[otherParticipantId] ?? 'Onbekend';
 
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                  child: Text(
-                    otherParticipantName.substring(0, 1).toUpperCase(),
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
+              return Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                elevation: 1.5,
+                shadowColor: Colors.black.withValues(alpha: 0.05),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.sm,
+                  ),
+                  leading: CircleAvatar(
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.14),
+                    child: Text(
+                      otherParticipantName.substring(0, 1).toUpperCase(),
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                ),
-                title: Text(
-                  otherParticipantName,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Toestel: ${chat.deviceTitle}',
-                      style: const TextStyle(
+                  title: Text(
+                    otherParticipantName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 4),
+                      Text(
+                        'Toestel: ${chat.deviceTitle}',
+                        style: const TextStyle(
                           fontSize: 12,
                           color: AppColors.primary,
-                          fontWeight: FontWeight.w500),
-                    ),
-                    Text(
-                      chat.lastMessage.isEmpty
-                          ? 'Geen berichten nog'
-                          : chat.lastMessage,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: chat.lastMessage.isEmpty
-                            ? AppColors.textLight
-                            : AppColors.textDark,
-                        fontStyle: chat.lastMessage.isEmpty
-                            ? FontStyle.italic
-                            : FontStyle.normal,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                trailing: Text(
-                  DateFormat('dd/MM HH:mm').format(chat.updatedAt),
-                  style: const TextStyle(
-                      fontSize: 12, color: AppColors.textLight),
-                ),
-                isThreeLine: true,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ChatDetailScreen(
-                        chat: chat,
-                        currentUserId: uid,
-                        otherUserName: otherParticipantName,
+                      const SizedBox(height: 2),
+                      Text(
+                        chat.lastMessage.isEmpty
+                            ? 'Nog geen berichten'
+                            : chat.lastMessage,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: chat.lastMessage.isEmpty
+                              ? AppColors.textLight
+                              : AppColors.textDark,
+                          fontStyle: chat.lastMessage.isEmpty
+                              ? FontStyle.italic
+                              : FontStyle.normal,
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    ],
+                  ),
+                  trailing: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        DateFormat('dd/MM').format(chat.updatedAt),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textLight,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        DateFormat('HH:mm').format(chat.updatedAt),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textLight,
+                        ),
+                      ),
+                    ],
+                  ),
+                  isThreeLine: true,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChatDetailScreen(
+                          chat: chat,
+                          currentUserId: uid,
+                          otherUserName: otherParticipantName,
+                        ),
+                      ),
+                    );
+                  },
+                ),
               );
             },
           );

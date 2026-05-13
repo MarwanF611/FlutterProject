@@ -68,8 +68,9 @@ class _AllDevicesScreenState extends State<AllDevicesScreen> {
         return;
       }
       final pos = await Geolocator.getCurrentPosition(
-        locationSettings:
-            const LocationSettings(accuracy: LocationAccuracy.medium),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+        ),
       ).timeout(const Duration(seconds: 8));
       if (mounted) setState(() => _userPosition = pos);
     } catch (_) {}
@@ -137,7 +138,11 @@ class _AllDevicesScreenState extends State<AllDevicesScreen> {
       ),
       builder: (_) => Padding(
         padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, AppSpacing.xxl),
+          AppSpacing.lg,
+          AppSpacing.xl,
+          AppSpacing.lg,
+          AppSpacing.xxl,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,8 +179,7 @@ class _AllDevicesScreenState extends State<AllDevicesScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
@@ -218,24 +222,83 @@ class _AllDevicesScreenState extends State<AllDevicesScreen> {
                 final devices = _filter(snapshot.data ?? []);
                 if (devices.isEmpty) {
                   return Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.search_off,
-                            size: 64,
-                            color: Colors.grey.withValues(alpha: 0.4)),
-                        const SizedBox(height: AppSpacing.md),
-                        Text(
-                          'Geen toestellen gevonden',
-                          style: TextStyle(color: Colors.grey[500]),
+                    child: Card(
+                      margin: const EdgeInsets.symmetric(horizontal: 24),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                      ),
+                      elevation: 1.5,
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.search_off,
+                              size: 64,
+                              color: Colors.grey.withValues(alpha: 0.4),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            Text(
+                              'Geen toestellen gevonden',
+                              style: AppTypography.title3,
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            Text(
+                              'Probeer een andere radius of zoekterm.',
+                              style: AppTypography.body2,
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   );
                 }
-                return _showMap
-                    ? _buildMap(devices)
-                    : _buildGrid(ctx, devices);
+                return Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                        vertical: AppSpacing.sm,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                              vertical: AppSpacing.sm,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.circle,
+                              ),
+                            ),
+                            child: Text(
+                              '${devices.length} toestellen gevonden',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          if (_radiusKm != null)
+                            Text(
+                              'Binnen ${_radiusKm!.toInt()} km',
+                              style: AppTypography.body2,
+                            ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: _showMap
+                          ? _buildMap(devices)
+                          : _buildGrid(ctx, devices),
+                    ),
+                  ],
+                );
               },
             ),
           ),
@@ -248,7 +311,11 @@ class _AllDevicesScreenState extends State<AllDevicesScreen> {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.sm),
+        AppSpacing.lg,
+        AppSpacing.md,
+        AppSpacing.lg,
+        AppSpacing.sm,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -257,12 +324,13 @@ class _AllDevicesScreenState extends State<AllDevicesScreen> {
             decoration: InputDecoration(
               hintText: 'Zoeken...',
               hintStyle: const TextStyle(color: AppColors.textLight),
-              prefixIcon:
-                  const Icon(Icons.search, color: AppColors.textLight),
+              prefixIcon: const Icon(Icons.search, color: AppColors.textLight),
               filled: true,
               fillColor: AppColors.primaryDark.withValues(alpha: 0.08),
               contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 borderSide: BorderSide.none,
@@ -279,24 +347,28 @@ class _AllDevicesScreenState extends State<AllDevicesScreen> {
             child: Row(
               children: [
                 _Chip(
-                    label: 'Nieuwste',
-                    selected: _sort == 'newest',
-                    onTap: () => setState(() => _sort = 'newest')),
+                  label: 'Nieuwste',
+                  selected: _sort == 'newest',
+                  onTap: () => setState(() => _sort = 'newest'),
+                ),
                 const SizedBox(width: AppSpacing.sm),
                 _Chip(
-                    label: 'Prijs ↑',
-                    selected: _sort == 'priceAsc',
-                    onTap: () => setState(() => _sort = 'priceAsc')),
+                  label: 'Prijs ↑',
+                  selected: _sort == 'priceAsc',
+                  onTap: () => setState(() => _sort = 'priceAsc'),
+                ),
                 const SizedBox(width: AppSpacing.sm),
                 _Chip(
-                    label: 'Prijs ↓',
-                    selected: _sort == 'priceDesc',
-                    onTap: () => setState(() => _sort = 'priceDesc')),
+                  label: 'Prijs ↓',
+                  selected: _sort == 'priceDesc',
+                  onTap: () => setState(() => _sort = 'priceDesc'),
+                ),
                 const SizedBox(width: AppSpacing.lg),
                 _Chip(
-                    label: 'Alles',
-                    selected: _radiusKm == null,
-                    onTap: () => setState(() => _radiusKm = null)),
+                  label: 'Alles',
+                  selected: _radiusKm == null,
+                  onTap: () => setState(() => _radiusKm = null),
+                ),
                 const SizedBox(width: AppSpacing.sm),
                 for (final r in _radii) ...[
                   _Chip(
@@ -474,14 +546,13 @@ class _Chip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: selected
               ? AppColors.primary
               : disabled
-                  ? Colors.grey.withValues(alpha: 0.08)
-                  : const Color(0xFF979797).withValues(alpha: 0.12),
+              ? Colors.grey.withValues(alpha: 0.08)
+              : const Color(0xFF979797).withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(AppRadius.circle),
         ),
         child: Text(
@@ -492,8 +563,8 @@ class _Chip extends StatelessWidget {
             color: selected
                 ? Colors.white
                 : disabled
-                    ? Colors.grey.withValues(alpha: 0.4)
-                    : AppColors.textMedium,
+                ? Colors.grey.withValues(alpha: 0.4)
+                : AppColors.textMedium,
           ),
         ),
       ),
@@ -557,7 +628,11 @@ class _DeviceProductCardState extends State<_DeviceProductCard> {
                       borderRadius: BorderRadius.circular(AppRadius.md),
                       child: _buildImage(widget.device.imageUrls.first),
                     )
-                  : const Icon(Icons.devices, color: AppColors.textLight, size: 40),
+                  : const Icon(
+                      Icons.devices,
+                      color: AppColors.textLight,
+                      size: 40,
+                    ),
             ),
           ),
           const SizedBox(height: AppSpacing.sm),

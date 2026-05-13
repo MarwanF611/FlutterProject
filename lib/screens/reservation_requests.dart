@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../constants/app_constants.dart';
 import '../models/reservation.dart';
 import '../providers/auth_provider.dart';
 import '../providers/reservation_provider.dart';
@@ -24,21 +25,42 @@ class ReservationRequestsScreen extends StatelessWidget {
         final reservations = snapshot.data ?? [];
         if (reservations.isEmpty) {
           return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.inbox_outlined, size: 64, color: Colors.grey[400]),
-                const SizedBox(height: 12),
-                Text(
-                  'Geen binnenkomende aanvragen.',
-                  style: TextStyle(color: Colors.grey[600]),
+            child: Card(
+              margin: const EdgeInsets.symmetric(horizontal: 24),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+              ),
+              elevation: 1.5,
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.inbox_outlined,
+                      size: 64,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Geen binnenkomende aanvragen',
+                      style: AppTypography.title3,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Wanneer iemand een toestel wil huren, verschijnt het hier als aanvraag.',
+                      style: AppTypography.body2,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           );
         }
         return ListView.builder(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 12),
           itemCount: reservations.length,
           itemBuilder: (context, index) {
             final res = reservations[index];
@@ -46,13 +68,14 @@ class ReservationRequestsScreen extends StatelessWidget {
               reservation: res,
               onApprove: res.status == 'pending'
                   ? () => context
-                      .read<ReservationProvider>()
-                      .approveReservation(res.id, res.deviceId)
+                        .read<ReservationProvider>()
+                        .approveReservation(res.id, res.deviceId)
                   : null,
               onReject: res.status == 'pending'
-                  ? () => context
-                      .read<ReservationProvider>()
-                      .rejectReservation(res.id, res.deviceId)
+                  ? () => context.read<ReservationProvider>().rejectReservation(
+                      res.id,
+                      res.deviceId,
+                    )
                   : null,
             );
           },
