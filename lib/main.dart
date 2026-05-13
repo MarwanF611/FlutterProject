@@ -16,6 +16,7 @@ import 'screens/login.dart';
 import 'screens/register.dart';
 import 'services/auth_service.dart';
 import 'services/firestore_service.dart';
+import 'services/in_app_notification.dart';
 import 'services/notification_service.dart';
 import 'services/storage_service.dart';
 
@@ -48,9 +49,14 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  static final _navigatorKey = GlobalKey<NavigatorState>();
+
   @override
   Widget build(BuildContext context) {
+    InAppNotificationService.init(_navigatorKey);
+
     return MaterialApp(
+      navigatorKey: _navigatorKey,
       title: 'ToestelDelen',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(

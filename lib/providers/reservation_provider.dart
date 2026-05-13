@@ -4,6 +4,7 @@ import '../models/app_user.dart';
 import '../models/device.dart';
 import '../models/reservation.dart';
 import '../services/firestore_service.dart';
+import '../services/in_app_notification.dart';
 import '../services/notification_service.dart';
 
 class ReservationProvider extends ChangeNotifier {
@@ -45,9 +46,15 @@ class ReservationProvider extends ChangeNotifier {
           _seenIds.add(r.id);
           _unreadCount++;
           notifyListeners();
+          InAppNotificationService.show(
+            title: 'Nieuwe reserveringsaanvraag',
+            body: '${r.tenantName} wil "${r.deviceTitle}" huren.',
+            icon: Icons.calendar_month_rounded,
+            color: const Color(0xFF1976D2),
+          );
           NotificationService.showNotification(
             id: r.id.hashCode,
-            title: '📦 Nieuwe reserveringsaanvraag',
+            title: 'Nieuwe reserveringsaanvraag',
             body: '${r.tenantName} wil "${r.deviceTitle}" huren.',
           );
         }
